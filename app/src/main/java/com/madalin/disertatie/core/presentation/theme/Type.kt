@@ -1,4 +1,4 @@
-package com.madalin.disertatie.ui.theme
+package com.madalin.disertatie.core.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

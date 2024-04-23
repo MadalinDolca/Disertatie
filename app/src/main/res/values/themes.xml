@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.Disertatie" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="SplashScreenStyle" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Disertatie</item>
+    </style>
 </resources>
