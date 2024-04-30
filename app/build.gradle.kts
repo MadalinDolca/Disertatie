@@ -92,6 +92,12 @@ dependencies {
     // Lottie
     implementation(libs.lottie.compose)
 
+    // Accompanist Permissions
+    implementation(libs.accompanist.permissions)
+
+    // Play Services Location
+    implementation(libs.play.services.location)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

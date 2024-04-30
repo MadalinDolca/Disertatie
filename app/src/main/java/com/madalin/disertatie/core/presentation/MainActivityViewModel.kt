@@ -1,6 +1,5 @@
 package com.madalin.disertatie.core.presentation
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.madalin.disertatie.core.domain.actions.GlobalAction
@@ -33,7 +32,6 @@ class MainActivityViewModel(
                 statusBannerData = this.statusBannerData
             )
         }
-        Log.d("MainActivityViewModel", "reduced ${_state.value}")
     }
 
     fun toggleStatusBannerVisibility(isVisible: Boolean) {

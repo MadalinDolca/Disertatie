@@ -35,4 +35,14 @@
     <string name="data_fetching_error">Data fetching error</string>
     <string name="could_not_get_the_user_id">Could not get the user ID</string>
     <string name="user_data_not_found">User data not found</string>
+    <string name="permission_required">Permission required</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="open_app_settings">Open app settings</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="location">Location</string>
+    <string name="camera">Camera</string>
+    <string name="it_seems_that_you_have_permanently_declined_x_permission">It seems that you have permanently declined %s permission. Please go to the app settings to grant it manually.</string>
+    <string name="coarse_location_usage_explanation">The app needs access to your location so that you will be able to record coordinates</string>
+    <string name="fine_location_usage_explanation">The app needs access to your exact location to obtain accurate coordinates</string>
+    <string name="camera_usage_explanation">The app needs access to your camera so that you will be able to take pictures for trails</string>
 </resources>
