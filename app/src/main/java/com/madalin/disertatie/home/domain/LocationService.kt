@@ -1,22 +1,14 @@
 package com.madalin.disertatie.home.domain
 
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.LocationServices
-import com.madalin.disertatie.R
-import com.madalin.disertatie.core.domain.util.LOCATION_NOTIFICATION_CHANNEL_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 
 /**
  * Service that tracks and reports the device's location in the background as a foreground service.
@@ -79,7 +71,8 @@ class LocationService : Service() {
      * notification with the latest location. The flow collection is launched in [locationClient].
      */
     private fun start() {
-        val stopIntent = Intent(this, LocationService::class.java).setAction(ACTION_STOP)
+        TODO()
+        /*        val stopIntent = Intent(this, LocationService::class.java).setAction(ACTION_STOP)
         val pendingIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         val stopAction = NotificationCompat.Action.Builder(R.drawable.ic_launcher_foreground, "Stop", pendingIntent).build()
 
@@ -107,7 +100,7 @@ class LocationService : Service() {
             }
             .launchIn(serviceScope)
 
-        startForeground(1, notification.build())
+        startForeground(1, notification.build())*/
     }
 
     /**
@@ -121,5 +114,25 @@ class LocationService : Service() {
     companion object {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
+    }
+}
+
+/**
+ * Starts a [LocationService].
+ */
+fun startLocationService(applicationContext: Context) {
+    Intent(applicationContext, LocationService::class.java).apply {
+        action = LocationService.ACTION_START
+        applicationContext.startService(this)
+    }
+}
+
+/**
+ * Stops the [LocationService].
+ */
+fun stopLocationService(applicationContext: Context) {
+    Intent(applicationContext, LocationService::class.java).apply {
+        action = LocationService.ACTION_STOP
+        applicationContext.startService(this)
     }
 }

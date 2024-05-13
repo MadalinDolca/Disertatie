@@ -1,11 +1,11 @@
 [versions]
 # Plugins
-agp = "8.3.2"
+agp = "8.4.0"
 kotlin = "1.9.0"
 gmsGoogleServices = "4.4.1"
 
 # Libraries
-coreKtx = "1.13.0"
+coreKtx = "1.13.1"
 coreSplashScreen = "1.0.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -13,7 +13,7 @@ espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.7.0"
 lifecycleCompose = "2.7.0"
 activityCompose = "1.9.0"
-composeBom = "2024.04.01"
+composeBom = "2024.05.00"
 materialIconsExtended = "1.6.6"
 navigationCompose = "2.7.7"
 firebaseBom = "32.8.1"
@@ -21,6 +21,8 @@ koinBom = "3.5.3"
 lottieCompose = "6.4.0"
 accompanistPermissions = "0.34.0"
 playServicesLocation = "21.2.0"
+mapsCompose = "4.4.1"
+secretsGradlePlugin = "2.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,6 +73,14 @@ accompanist-permissions = { module = "com.google.accompanist:accompanist-permiss
 
 # Play Services Location
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+
+# Google Maps Compose
+maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
+maps-compose-utils = { module = "com.google.maps.android:maps-compose-utils", version.ref = "mapsCompose" }
+maps-compose-widgets = { module = "com.google.maps.android:maps-compose-widgets", version.ref = "mapsCompose" }
+
+# Google Secrets
+secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

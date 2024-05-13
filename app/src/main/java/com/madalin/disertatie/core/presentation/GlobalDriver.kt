@@ -8,6 +8,8 @@ import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
@@ -18,12 +20,14 @@ import kotlinx.coroutines.withContext
 class GlobalDriver(
     private val userRepository: FirebaseUserRepository
 ) {
+    @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
     private val dispatcher = newSingleThreadContext("AppContext")
+
     private val _state = MutableStateFlow(GlobalState()) // the overall state of the application
     val state = _state.asSharedFlow() // shared state to allow components to observe the state and react to state changes
 
     /**
-     * Determines the [action] type and calls the appropriate handle method.
+     * Determines the global [action] type and calls the appropriate handle method.
      */
     fun handleAction(action: GlobalAction) = runBlocking {
         withContext(dispatcher) {

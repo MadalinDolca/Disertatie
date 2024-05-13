@@ -45,4 +45,11 @@
     <string name="coarse_location_usage_explanation">The app needs access to your location so that you will be able to record coordinates</string>
     <string name="fine_location_usage_explanation">The app needs access to your exact location to obtain accurate coordinates</string>
     <string name="camera_usage_explanation">The app needs access to your camera so that you will be able to take pictures for trails</string>
+    <string name="the_location_settings_could_not_be_turned_on_please_turn_them_on_manually_or_click_the_below_button">The location settings could not be turned on. Please turn them on manually or click the below button.</string>
+    <string name="device_location_has_been_enabled">Device location has been enabled</string>
+    <string name="enable_location">Enable location</string>
+    <string name="start_tracking">Start tracking</string>
+    <string name="stop_tracking">Stop tracking</string>
+    <string name="you_are_here">You are here</string>
+    <string name="location_is_not_available_it_might_be_disabled">Location is not available. It might be disabled.</string>
 </resources>

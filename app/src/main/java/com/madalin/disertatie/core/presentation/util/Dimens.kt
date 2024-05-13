@@ -9,6 +9,6 @@ object Dimens {
     //val radiusSmall = 10.dp
     //val radiusMedium = 17.dp
     //val radiusLarge = 25.dp
-    val lottieSize = 170.dp
+    val lottieSize = 250.dp
     val fontSizeRegular = 16.sp
 }

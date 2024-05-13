@@ -3,6 +3,7 @@ package com.madalin.disertatie.core.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.madalin.disertatie.core.domain.actions.GlobalAction
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -15,10 +16,17 @@ class MainActivityViewModel(
     val state = _state.asStateFlow()
 
     init {
+        // collect global state
         viewModelScope.launch {
             globalDriver.state.collect {
                 it.reduce()
             }
+        }
+
+        // splash screen delay
+        viewModelScope.launch {
+            delay(3000L)
+            _state.update { it.copy(isSplashScreenVisible = false) }
         }
 
         globalDriver.handleAction(GlobalAction.ListenForUserData)
@@ -34,7 +42,7 @@ class MainActivityViewModel(
         }
     }
 
-    fun toggleStatusBannerVisibility(isVisible: Boolean) {
+    fun setStatusBannerVisibility(isVisible: Boolean) {
         if (isVisible) globalDriver.handleAction(GlobalAction.ShowStatusBanner)
         else globalDriver.handleAction(GlobalAction.HideStatusBanner)
     }

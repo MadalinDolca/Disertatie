@@ -8,6 +8,9 @@ data class MainActivityUiState(
     // user login status
     val isUserLoggedIn: Boolean = false,
 
+    // splash screen
+    val isSplashScreenVisible: Boolean = true,
+
     // status banner
     val isStatusBannerVisible: Boolean = false,
     val statusBannerData: StatusBannerData = StatusBannerData(StatusBannerType.Info, UiText.Empty)

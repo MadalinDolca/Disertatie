@@ -1,9 +1,7 @@
 package com.madalin.disertatie.home.domain
 
 import android.content.Context
-import android.content.Intent
 import android.content.IntentSender
-import android.location.LocationManager
 import androidx.activity.result.IntentSenderRequest
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationRequest
@@ -50,24 +48,4 @@ fun requestLocationSettings(
                 }
             }
         }
-}
-
-/**
- * Checks if location service is enabled.
- * @return `true` if enabled, `false` otherwise
- */
-fun isLocationEnabled(context: Context): Boolean {
-    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-    return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-}
-
-/**
- * Starts a [LocationService].
- */
-fun startLocationService(context: Context) {
-    Intent(context, LocationService::class.java).apply {
-        action = LocationService.ACTION_START
-        context.startService(this)
-    }
 }

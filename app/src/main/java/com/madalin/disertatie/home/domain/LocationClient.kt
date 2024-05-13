@@ -8,17 +8,22 @@ import kotlinx.coroutines.flow.Flow
  */
 interface LocationClient {
     /**
-     * Starts a stream of location updates with the specified [interval] in milliseconds.
+     * Returns a cold [Flow] that emits the location of the device with this [interval] in milliseconds.
+     * If the location is available it emits the [Location], otherwise it emits `null`.
+     * Checks location permission and GPS status before requesting updates.
      *
-     * @throws LocationException if there's an issue getting location updates,
-     *  like missing permissions or disabled location providers.
-     * @return a flow that emits the device's location updates
+     * @throws [LocationException] if an error occurs while getting the location
+     * @throws [LocationPermissionNotGrantedException] if location permission is not granted
+     * @throws [LocationNotAvailableException] if GPS is disabled
      */
-    fun getLocationUpdates(interval: Long): Flow<Location>
+    fun getLocationUpdates(interval: Long): Flow<Location?>
 
     /**
-     * Exception class for location related errors (i.e. If the app doesn't have location permission
-     * or if the GPS is disabled).
+     * Exception class for location related errors with a [message].
      */
     class LocationException(message: String) : Exception()
+
+    class LocationNotAvailableException : Exception()
+
+    class LocationPermissionNotGrantedException : Exception()
 }

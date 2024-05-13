@@ -2,14 +2,14 @@ package com.madalin.disertatie.auth.presentation.login
 
 import androidx.lifecycle.ViewModel
 import com.madalin.disertatie.R
+import com.madalin.disertatie.auth.domain.failures.LoginFailure
 import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
 import com.madalin.disertatie.auth.domain.validation.EmailFieldError
 import com.madalin.disertatie.auth.domain.validation.PasswordFieldError
 import com.madalin.disertatie.auth.domain.validation.validateLoginFields
 import com.madalin.disertatie.core.domain.actions.GlobalAction
-import com.madalin.disertatie.auth.domain.failures.LoginFailure
-import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.domain.util.LengthConstraint
+import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
@@ -23,22 +23,6 @@ class LoginViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState = _uiState.asStateFlow()
-
-/*    init {
-        viewModelScope.launch {
-            globalDriver.state.collect {
-                it.reduce()
-            }
-        }
-    }
-
-    private fun GlobalState.reduce() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isLoginOperationComplete = this.isUserLoggedIn
-            )
-        }
-    }*/
 
     /**
      * Logs in the user with the given [email] and [password] if they are valid. Checks if the

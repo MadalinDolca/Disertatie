@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
     alias(libs.plugins.googleGmsGoogleServices) // Google services Gradle plugin
     id("kotlin-parcelize") // Kotlin Parcelize
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") // Google Secrets
 }
 
 android {
@@ -97,6 +98,11 @@ dependencies {
 
     // Play Services Location
     implementation(libs.play.services.location)
+
+    // Google Maps Compose
+    implementation(libs.maps.compose)
+    implementation(libs.maps.compose.utils)
+    implementation(libs.maps.compose.widgets)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

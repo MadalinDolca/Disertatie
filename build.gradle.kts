@@ -6,3 +6,10 @@ plugins {
     // Google services Gradle plugin dependency
     alias(libs.plugins.googleGmsGoogleServices) apply false
 }
+
+buildscript {
+    dependencies {
+        // Google Secrets
+        classpath(libs.secrets.gradle.plugin)
+    }
+}
