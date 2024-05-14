@@ -16,4 +16,5 @@ data class HomeUiState(
     val cameraPositionState: CameraPositionState = CameraPositionState(),
     val mapProperties: MapProperties = MapProperties(isMyLocationEnabled = true),
     val mapUiSettings: MapUiSettings = MapUiSettings(zoomControlsEnabled = false),
+    val isCameraDragged: Boolean = false
 )

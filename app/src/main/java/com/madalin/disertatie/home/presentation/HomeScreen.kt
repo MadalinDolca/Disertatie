@@ -4,26 +4,34 @@ import android.app.Activity
 import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.LocationSearching
 import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -31,7 +39,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.maps.MapsInitializer
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -40,6 +50,8 @@ import com.google.maps.android.compose.Polyline
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
+import com.madalin.disertatie.home.domain.extensions.toLatLng
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.presentation.components.LocationNotAvailableBanner
 import com.madalin.disertatie.home.presentation.components.UserMarker
@@ -57,8 +69,9 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
         contract = ActivityResultContracts.StartIntentSenderForResult(),
         onResult = { activityResult ->
             if (activityResult.resultCode == Activity.RESULT_OK) {
-                viewModel.setLocationAvailability(true)
                 viewModel.showStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled)
+                viewModel.setLocationAvailability(true)
+                viewModel.startLocationFetching(applicationContext)
             } else {
                 viewModel.setLocationAvailability(false)
             }
@@ -74,18 +87,17 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
             //HomeTopBar()
         },
         bottomBar = {
-            HomeBottomBar(onLogoutClick = { viewModel.logout() })
+            HomeBottomBar(onLogoutClick = viewModel::logout)
         },
         floatingActionButton = {
             HomeFloatingActionButton(
                 isTracking = uiState.isCreatingTrail,
-                onStartCreateTrailClick = { viewModel.startTrailCreation(applicationContext) },
-                onStopCreateTrailClick = { viewModel.stopTrailCreation() })
+                onStartTrailCreationClick = viewModel::startTrailCreation,
+                onStopTrailCreationClick = viewModel::stopTrailCreation
+            )
         }
     ) { padding ->
-        Column(
-            // modifier = Modifier.padding(padding)
-        ) {
+        Box {
             MapContainer(
                 cameraPositionState = uiState.cameraPositionState,
                 mapUiSettings = uiState.mapUiSettings,
@@ -94,7 +106,14 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
                 isCreatingTrail = uiState.isCreatingTrail,
                 userLocation = uiState.currentUserLocation,
                 trailPointsList = uiState.trailPointsList,
-                onEnableLocationClick = { viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest) }
+                onEnableLocationClick = { viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest) },
+                onSetCameraDraggedState = viewModel::setCameraDraggedState
+            )
+
+            MapControls(
+                userLocation = uiState.currentUserLocation,
+                cameraPosition = uiState.cameraPositionState.position,
+                onMoveCameraClick = viewModel::moveCameraToUserLocation
             )
         }
     }
@@ -110,9 +129,16 @@ private fun MapContainer(
     userLocation: Location?,
     trailPointsList: List<TrailPoint>,
     onEnableLocationClick: () -> Unit,
+    onSetCameraDraggedState: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
+        // camera position is changing due to a user gesture (dragging)
+        LaunchedEffect(cameraPositionState.isMoving) {
+            if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
+                onSetCameraDraggedState(true)
+            }
+        }
 
         GoogleMap(
             cameraPositionState = cameraPositionState,
@@ -141,6 +167,31 @@ private fun MapContainer(
 }
 
 @Composable
+fun MapControls(
+    userLocation: Location?,
+    cameraPosition: CameraPosition,
+    onMoveCameraClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(Dimens.container),
+        verticalArrangement = Arrangement.spacedBy(
+            space = Dimens.separator,
+            alignment = Alignment.CenterVertically
+        ),
+        horizontalAlignment = Alignment.End
+    ) {
+        UserLocationButton(
+            userLocation = userLocation,
+            cameraPosition = cameraPosition,
+            onMoveCameraClick = onMoveCameraClick
+        )
+    }
+}
+
+@Composable
 private fun HomeTopBar(modifier: Modifier = Modifier) {
     Surface(modifier = modifier.statusBarsPadding()) {
         Button(onClick = { /*TODO*/ }) {
@@ -152,17 +203,50 @@ private fun HomeTopBar(modifier: Modifier = Modifier) {
 @Composable
 private fun HomeFloatingActionButton(
     isTracking: Boolean,
-    onStartCreateTrailClick: () -> Unit,
-    onStopCreateTrailClick: () -> Unit,
+    onStartTrailCreationClick: () -> Unit,
+    onStopTrailCreationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FloatingActionButton(onClick = {
-        if (!isTracking) onStartCreateTrailClick()
-        else onStopCreateTrailClick()
-    }) {
+    FloatingActionButton(
+        onClick = {
+            if (!isTracking) onStartTrailCreationClick()
+            else onStopTrailCreationClick()
+        },
+        modifier = modifier
+    ) {
         Text(
-            text = if (!isTracking) stringResource(R.string.start_tracking)
-            else stringResource(R.string.stop_tracking)
+            text = if (!isTracking) stringResource(R.string.create_trail)
+            else stringResource(R.string.stop)
+        )
+    }
+}
+
+@Composable
+fun UserLocationButton(
+    userLocation: Location?,
+    cameraPosition: CameraPosition,
+    onMoveCameraClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onMoveCameraClick,
+        modifier = modifier,
+        enabled = userLocation != null,
+        colors = IconButtonDefaults.filledIconButtonColors()
+    ) {
+        val isPositioned = if (userLocation != null) {
+            cameraPosition.target hasSameCoordinates userLocation.toLatLng()
+        } else {
+            false
+        }
+
+        Icon(
+            imageVector = if (isPositioned) {
+                Icons.Rounded.MyLocation
+            } else {
+                Icons.Rounded.LocationSearching
+            },
+            contentDescription = "User location"
         )
     }
 }

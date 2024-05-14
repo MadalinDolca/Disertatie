@@ -49,7 +49,8 @@
     <string name="device_location_has_been_enabled">Device location has been enabled</string>
     <string name="enable_location">Enable location</string>
     <string name="start_tracking">Start tracking</string>
-    <string name="stop_tracking">Stop tracking</string>
+    <string name="stop">Stop tracking</string>
     <string name="you_are_here">You are here</string>
     <string name="location_is_not_available_it_might_be_disabled">Location is not available. It might be disabled.</string>
+    <string name="create_trail">Create trail</string>
 </resources>

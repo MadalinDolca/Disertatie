@@ -25,7 +25,7 @@ class MainActivityViewModel(
 
         // splash screen delay
         viewModelScope.launch {
-            delay(3000L)
+            delay(1000L)
             _state.update { it.copy(isSplashScreenVisible = false) }
         }
 
