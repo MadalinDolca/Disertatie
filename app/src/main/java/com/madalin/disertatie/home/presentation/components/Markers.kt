@@ -31,7 +31,7 @@ fun UserMarker(userLocation: Location) {
         state = MarkerState(position = userLocation.toLatLng()),
         icon = bitmapDescriptor(
             context = LocalContext.current,
-            vectorResId = R.drawable.user_pin
+            vectorResId = R.drawable.explorer
         )
     ) {
         Card(modifier = Modifier.padding(bottom = Dimens.separator)) {

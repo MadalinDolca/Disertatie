@@ -4,12 +4,20 @@ import android.app.Activity
 import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -17,9 +25,10 @@ import androidx.compose.material.icons.rounded.LocationSearching
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.PostAdd
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -90,13 +99,13 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
             HomeBottomBar(onLogoutClick = viewModel::logout)
         },
         floatingActionButton = {
-            HomeFloatingActionButton(
-                isTracking = uiState.isCreatingTrail,
+            CreateTrailFAB(
+                isCreatingTrail = uiState.isCreatingTrail,
                 onStartTrailCreationClick = viewModel::startTrailCreation,
                 onStopTrailCreationClick = viewModel::stopTrailCreation
             )
         }
-    ) { padding ->
+    ) { paddingValues ->
         Box {
             MapContainer(
                 cameraPositionState = uiState.cameraPositionState,
@@ -111,9 +120,12 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
             )
 
             MapControls(
+                paddingValues = paddingValues,
                 userLocation = uiState.currentUserLocation,
                 cameraPosition = uiState.cameraPositionState.position,
-                onMoveCameraClick = viewModel::moveCameraToUserLocation
+                isCreatingTrail = uiState.isCreatingTrail,
+                onMoveCameraClick = viewModel::moveCameraToUserLocation,
+                onAddTrailInfoClick = { }
             )
         }
     }
@@ -167,28 +179,50 @@ private fun MapContainer(
 }
 
 @Composable
-fun MapControls(
+private fun MapControls(
+    paddingValues: PaddingValues,
     userLocation: Location?,
     cameraPosition: CameraPosition,
+    isCreatingTrail: Boolean,
     onMoveCameraClick: () -> Unit,
+    onAddTrailInfoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(Dimens.container),
-        verticalArrangement = Arrangement.spacedBy(
-            space = Dimens.separator,
-            alignment = Alignment.CenterVertically
-        ),
-        horizontalAlignment = Alignment.End
+            .padding(bottom = paddingValues.calculateBottomPadding() + Dimens.container)
     ) {
-        UserLocationButton(
-            userLocation = userLocation,
-            cameraPosition = cameraPosition,
-            onMoveCameraClick = onMoveCameraClick
-        )
+        // right controls
+        Column(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            verticalArrangement = Arrangement.spacedBy(Dimens.separator)
+        ) {
+            AddTrailInfoButton(
+                isCreatingTrail = isCreatingTrail,
+                onClick = onAddTrailInfoClick
+            )
+        }
+
+        // left controls
+        Column(
+            modifier = Modifier.align(Alignment.BottomStart)
+        ) {
+            AnimatedVisibility(
+                visible = !isCameraPositionedOnUser(cameraPosition, userLocation),
+                enter = fadeIn() + expandHorizontally(),
+                exit = fadeOut() + shrinkHorizontally()
+            ) {
+                UserLocationButton(
+                    userLocation = userLocation,
+                    cameraPosition = cameraPosition,
+                    onMoveCameraClick = onMoveCameraClick,
+                    modifier = Modifier.padding(start = Dimens.container)
+                )
+            }
+        }
     }
+
 }
 
 @Composable
@@ -201,28 +235,30 @@ private fun HomeTopBar(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HomeFloatingActionButton(
-    isTracking: Boolean,
+private fun CreateTrailFAB(
+    isCreatingTrail: Boolean,
     onStartTrailCreationClick: () -> Unit,
     onStopTrailCreationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FloatingActionButton(
+    ExtendedFloatingActionButton(
+        text = {
+            Text(
+                text = if (!isCreatingTrail) stringResource(R.string.create_trail)
+                else stringResource(R.string.stop)
+            )
+        },
+        icon = { },
         onClick = {
-            if (!isTracking) onStartTrailCreationClick()
+            if (!isCreatingTrail) onStartTrailCreationClick()
             else onStopTrailCreationClick()
         },
         modifier = modifier
-    ) {
-        Text(
-            text = if (!isTracking) stringResource(R.string.create_trail)
-            else stringResource(R.string.stop)
-        )
-    }
+    )
 }
 
 @Composable
-fun UserLocationButton(
+private fun UserLocationButton(
     userLocation: Location?,
     cameraPosition: CameraPosition,
     onMoveCameraClick: () -> Unit,
@@ -230,23 +266,42 @@ fun UserLocationButton(
 ) {
     IconButton(
         onClick = onMoveCameraClick,
-        modifier = modifier,
+        modifier = modifier.size(Dimens.iconButtonContainerSize),
         enabled = userLocation != null,
-        colors = IconButtonDefaults.filledIconButtonColors()
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = Color.Black.copy(alpha = 0.4f),
+            contentColor = Color.White,
+            disabledContainerColor = Color.White.copy(alpha = 0.2f),
+            disabledContentColor = Color.Black.copy(alpha = 0.2f)
+        )
     ) {
-        val isPositioned = if (userLocation != null) {
-            cameraPosition.target hasSameCoordinates userLocation.toLatLng()
-        } else {
-            false
-        }
-
         Icon(
-            imageVector = if (isPositioned) {
+            imageVector = if (isCameraPositionedOnUser(cameraPosition, userLocation)) {
                 Icons.Rounded.MyLocation
             } else {
                 Icons.Rounded.LocationSearching
             },
-            contentDescription = "User location"
+            contentDescription = "User location",
+            modifier = Modifier.size(Dimens.iconButtonContentSize)
+        )
+    }
+}
+
+@Composable
+private fun AddTrailInfoButton(
+    isCreatingTrail: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.size(Dimens.iconButtonContainerSize),
+        colors = IconButtonDefaults.filledIconButtonColors()
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.PostAdd,
+            contentDescription = "Add trail info",
+            modifier = Modifier.size(Dimens.iconButtonContentSize)
         )
     }
 }
@@ -258,7 +313,8 @@ private fun HomeBottomBar(
 ) {
     BottomAppBar(
         modifier = modifier
-            .padding(Dimens.container)
+            .navigationBarsPadding()
+            .padding(horizontal = Dimens.container)
             .clip(MaterialTheme.shapes.large),
         windowInsets = WindowInsets(bottom = 0)
     ) {
@@ -282,5 +338,19 @@ private fun HomeBottomBar(
             icon = { Icon(imageVector = Icons.Rounded.AccountCircle, contentDescription = "Discover") },
             label = { Text(text = "Logout") }
         )
+    }
+}
+
+/**
+ * Checks if the [camera position][cameraPosition] is positioned on the
+ * [user's location][userLocation] by checking if their coordinates are the same.
+ * @return `true` if positioned, `false` otherwise.
+ */
+@Composable
+private fun isCameraPositionedOnUser(cameraPosition: CameraPosition, userLocation: Location?): Boolean {
+    return if (userLocation != null) {
+        cameraPosition.target hasSameCoordinates userLocation.toLatLng()
+    } else {
+        false
     }
 }

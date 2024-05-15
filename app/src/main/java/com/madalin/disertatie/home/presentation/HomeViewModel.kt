@@ -87,6 +87,7 @@ class HomeViewModel(
     }
 
     fun stopLocationFetching() {
+        stopTrailCreation()
         locationFetchingScope.cancel()
     }
 
