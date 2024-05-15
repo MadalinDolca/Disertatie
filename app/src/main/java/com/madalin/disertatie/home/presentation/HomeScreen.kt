@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +37,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,9 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.maps.MapsInitializer
-import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -59,8 +55,6 @@ import com.google.maps.android.compose.Polyline
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.Dimens
-import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
-import com.madalin.disertatie.home.domain.extensions.toLatLng
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.presentation.components.LocationNotAvailableBanner
 import com.madalin.disertatie.home.presentation.components.UserMarker
@@ -116,16 +110,16 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
                 userLocation = uiState.currentUserLocation,
                 trailPointsList = uiState.trailPointsList,
                 onEnableLocationClick = { viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest) },
-                onSetCameraDraggedState = viewModel::setCameraDraggedState
             )
 
             MapControls(
                 paddingValues = paddingValues,
                 userLocation = uiState.currentUserLocation,
-                cameraPosition = uiState.cameraPositionState.position,
+                cameraPositionState = uiState.cameraPositionState,
                 isCreatingTrail = uiState.isCreatingTrail,
+                isUserLocationButtonVisible = viewModel.isUserLocationButtonVisible(),
                 onMoveCameraClick = viewModel::moveCameraToUserLocation,
-                onAddTrailInfoClick = { }
+                onButtonClick = { }
             )
         }
     }
@@ -141,17 +135,9 @@ private fun MapContainer(
     userLocation: Location?,
     trailPointsList: List<TrailPoint>,
     onEnableLocationClick: () -> Unit,
-    onSetCameraDraggedState: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
-        // camera position is changing due to a user gesture (dragging)
-        LaunchedEffect(cameraPositionState.isMoving) {
-            if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
-                onSetCameraDraggedState(true)
-            }
-        }
-
         GoogleMap(
             cameraPositionState = cameraPositionState,
             properties = mapProperties,
@@ -182,10 +168,10 @@ private fun MapContainer(
 private fun MapControls(
     paddingValues: PaddingValues,
     userLocation: Location?,
-    cameraPosition: CameraPosition,
     isCreatingTrail: Boolean,
+    isUserLocationButtonVisible: Boolean,
     onMoveCameraClick: () -> Unit,
-    onAddTrailInfoClick: () -> Unit,
+    onButtonClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -198,10 +184,16 @@ private fun MapControls(
             modifier = Modifier.align(Alignment.CenterEnd),
             verticalArrangement = Arrangement.spacedBy(Dimens.separator)
         ) {
-            AddTrailInfoButton(
-                isCreatingTrail = isCreatingTrail,
-                onClick = onAddTrailInfoClick
-            )
+            AnimatedVisibility(
+                visible = isCreatingTrail,
+                enter = expandHorizontally(expandFrom = Alignment.Start),
+                exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start)
+            ) {
+                AddTrailInfoButton(
+                    onClick = onButtonClick,
+                    modifier = Modifier.padding(end = Dimens.container)
+                )
+            }
         }
 
         // left controls
@@ -209,20 +201,18 @@ private fun MapControls(
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             AnimatedVisibility(
-                visible = !isCameraPositionedOnUser(cameraPosition, userLocation),
-                enter = fadeIn() + expandHorizontally(),
+                visible = isUserLocationButtonVisible,
+                enter = expandHorizontally(),
                 exit = fadeOut() + shrinkHorizontally()
             ) {
                 UserLocationButton(
                     userLocation = userLocation,
-                    cameraPosition = cameraPosition,
                     onMoveCameraClick = onMoveCameraClick,
                     modifier = Modifier.padding(start = Dimens.container)
                 )
             }
         }
     }
-
 }
 
 @Composable
@@ -260,7 +250,6 @@ private fun CreateTrailFAB(
 @Composable
 private fun UserLocationButton(
     userLocation: Location?,
-    cameraPosition: CameraPosition,
     onMoveCameraClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -276,7 +265,7 @@ private fun UserLocationButton(
         )
     ) {
         Icon(
-            imageVector = if (isCameraPositionedOnUser(cameraPosition, userLocation)) {
+            imageVector = if (userLocation != null) {
                 Icons.Rounded.MyLocation
             } else {
                 Icons.Rounded.LocationSearching
@@ -289,7 +278,6 @@ private fun UserLocationButton(
 
 @Composable
 private fun AddTrailInfoButton(
-    isCreatingTrail: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -338,19 +326,5 @@ private fun HomeBottomBar(
             icon = { Icon(imageVector = Icons.Rounded.AccountCircle, contentDescription = "Discover") },
             label = { Text(text = "Logout") }
         )
-    }
-}
-
-/**
- * Checks if the [camera position][cameraPosition] is positioned on the
- * [user's location][userLocation] by checking if their coordinates are the same.
- * @return `true` if positioned, `false` otherwise.
- */
-@Composable
-private fun isCameraPositionedOnUser(cameraPosition: CameraPosition, userLocation: Location?): Boolean {
-    return if (userLocation != null) {
-        cameraPosition.target hasSameCoordinates userLocation.toLatLng()
-    } else {
-        false
     }
 }
