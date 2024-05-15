@@ -2,6 +2,7 @@ package com.madalin.disertatie.home.presentation
 
 import android.content.Context
 import android.location.Location
+import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -202,9 +203,13 @@ class HomeViewModel(
         _uiState.value.currentUserLocation?.let { userLocation ->
             // updates the camera position on the main thread
             viewModelScope.launch { //Handler(Looper.getMainLooper()).post {}
-                _uiState.value.cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(userLocation.toLatLng(), ZOOM_LEVEL)
-                )
+                try {
+                    _uiState.value.cameraPositionState.animate(
+                        CameraUpdateFactory.newLatLngZoom(userLocation.toLatLng(), ZOOM_LEVEL)
+                    )
+                } catch (e: Exception) {
+                    Log.d("HomeViewModel", "moveCameraToUserLocation: ${e.message}")
+                }
             }
         }
     }
