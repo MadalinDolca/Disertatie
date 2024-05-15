@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.maps.android.compose.CameraMoveStartedReason
 import com.madalin.disertatie.core.domain.actions.GlobalAction
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
@@ -17,6 +18,7 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.home.domain.DefaultLocationClient
 import com.madalin.disertatie.home.domain.LocationClient
+import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
 import com.madalin.disertatie.home.domain.extensions.toLatLng
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.domain.requestLocationSettings
@@ -103,7 +105,7 @@ class HomeViewModel(
         if (lastRegisteredLocation == null || lastRegisteredLocation.distanceTo(location) >= MIN_DISTANCE) {
             updateUserLocation(location)
             if (_uiState.value.isCreatingTrail) updateTrail(location)
-            if (!_uiState.value.isCameraDragged) moveCameraToUserLocation() // doesn't move the camera if the camera is being dragged
+            if (!isCameraMovedByGestures()) moveCameraToUserLocation() // doesn't move the camera if the camera has been dragged
         }
     }
 
@@ -198,8 +200,6 @@ class HomeViewModel(
      * Sets the camera dragged state to `false` and moves the camera to the user location.
      */
     fun moveCameraToUserLocation() {
-        _uiState.update { it.copy(isCameraDragged = false) } // resets the camera dragged state
-
         _uiState.value.currentUserLocation?.let { userLocation ->
             // updates the camera position on the main thread
             viewModelScope.launch { //Handler(Looper.getMainLooper()).post {}
@@ -215,10 +215,41 @@ class HomeViewModel(
     }
 
     /**
-     * Sets the camera dragged state to [isDragged].
+     * Checks if the camera position is positioned on the user's location by checking if their
+     * coordinates are the same.
+     * @return `true` if positioned, `false` otherwise.
      */
-    fun setCameraDraggedState(isDragged: Boolean) {
-        _uiState.update { it.copy(isCameraDragged = isDragged) }
+    private fun isCameraPositionedOnUser(): Boolean {
+        val currentUserLocation = _uiState.value.currentUserLocation
+        val cameraPositionTarget = _uiState.value.cameraPositionState.position.target
+
+        return if (currentUserLocation != null) {
+            cameraPositionTarget hasSameCoordinates currentUserLocation.toLatLng()
+        } else {
+            false
+        }
+    }
+
+    /**
+     * Returns `true` if the camera position has changed due to a user gesture like dragging,
+     * otherwise returns `false`.
+     */
+    private fun isCameraMovedByGestures(): Boolean {
+        return _uiState.value.cameraPositionState.cameraMoveStartedReason ==
+                CameraMoveStartedReason.GESTURE
+    }
+
+    /**
+     * Returns `true` if the camera position has changed due to a developer animation, otherwise
+     * returns `false`.
+     */
+    fun isCameraMovedByDeveloperAnimation(): Boolean {
+        return _uiState.value.cameraPositionState.cameraMoveStartedReason ==
+                CameraMoveStartedReason.DEVELOPER_ANIMATION
+    }
+
+    fun isUserLocationButtonVisible(): Boolean {
+        return !isCameraPositionedOnUser() && !isCameraMovedByDeveloperAnimation()
     }
 
     fun logout() {

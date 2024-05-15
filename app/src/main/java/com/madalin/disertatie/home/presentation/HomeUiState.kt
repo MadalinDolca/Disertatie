@@ -20,6 +20,5 @@ data class HomeUiState(
         mapToolbarEnabled = false,
         myLocationButtonEnabled = false,
         zoomControlsEnabled = false
-    ),
-    val isCameraDragged: Boolean = false
+    )
 )
