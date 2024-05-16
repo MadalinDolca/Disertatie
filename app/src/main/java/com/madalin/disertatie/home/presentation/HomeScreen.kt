@@ -25,9 +25,11 @@ import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PostAdd
+import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -73,7 +75,10 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
         onResult = { activityResult ->
             if (activityResult.resultCode == Activity.RESULT_OK) {
                 viewModel.showStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled)
+                viewModel.setLocationAvailability(true)
                 viewModel.startLocationFetching(applicationContext)
+            } else {
+                viewModel.setLocationAvailability(false)
             }
         }
     )
@@ -91,6 +96,7 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
         },
         floatingActionButton = {
             CreateTrailFAB(
+                isLocationAvailable = uiState.isLocationAvailable,
                 isCreatingTrail = uiState.isCreatingTrail,
                 onStartTrailCreationClick = viewModel::startTrailCreation,
                 onStopTrailCreationClick = viewModel::stopTrailCreation
@@ -222,6 +228,7 @@ private fun HomeTopBar(modifier: Modifier = Modifier) {
 
 @Composable
 private fun CreateTrailFAB(
+    isLocationAvailable: Boolean,
     isCreatingTrail: Boolean,
     onStartTrailCreationClick: () -> Unit,
     onStopTrailCreationClick: () -> Unit,
@@ -234,12 +241,18 @@ private fun CreateTrailFAB(
                 else stringResource(R.string.stop)
             )
         },
-        icon = { },
+        icon = { Icon(imageVector = Icons.Rounded.Route, contentDescription = null) },
         onClick = {
             if (!isCreatingTrail) onStartTrailCreationClick()
             else onStopTrailCreationClick()
         },
-        modifier = modifier
+        modifier = modifier,
+        expanded = isLocationAvailable || isCreatingTrail,
+        containerColor = if (isLocationAvailable) {
+            FloatingActionButtonDefaults.containerColor
+        } else {
+            MaterialTheme.colorScheme.errorContainer
+        }
     )
 }
 

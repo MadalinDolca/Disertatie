@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.maps.android.compose.CameraMoveStartedReason
+import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.actions.GlobalAction
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
@@ -60,7 +61,10 @@ class HomeViewModel(
     ) {
         requestLocationSettings(
             context = applicationContext,
-            onEnabled = { startLocationFetching(applicationContext) },
+            onEnabled = {
+                startLocationFetching(applicationContext)
+                setLocationAvailability(true)
+            },
             onDisabled = { activityResultLauncher.launch(it) }
         )
     }
@@ -113,7 +117,7 @@ class HomeViewModel(
      */
     private fun handleLocationAvailable() {
         if (!_uiState.value.isLocationAvailable) {
-            _uiState.update { it.copy(isLocationAvailable = true) }
+            setLocationAvailability(true)
         }
     }
 
@@ -123,7 +127,7 @@ class HomeViewModel(
      */
     private fun handleLocationNotAvailable() {
         if (_uiState.value.isLocationAvailable) {
-            _uiState.update { it.copy(isLocationAvailable = false) }
+            setLocationAvailability(false)
         }
     }
 
@@ -134,9 +138,20 @@ class HomeViewModel(
         _uiState.update { it.copy(currentUserLocation = location) }
     }
 
+    /**
+     * Sets the location availability state to [isAvailable].
+     */
+    fun setLocationAvailability(isAvailable: Boolean) {
+        _uiState.update { it.copy(isLocationAvailable = isAvailable) }
+    }
+
     fun startTrailCreation() {
-        _uiState.update { it.copy(isCreatingTrail = true) }
-        moveCameraToUserLocation()
+        if (!_uiState.value.isLocationAvailable) {
+            showStatusBanner(StatusBannerType.Error, R.string.enable_location)
+        } else {
+            _uiState.update { it.copy(isCreatingTrail = true) }
+            moveCameraToUserLocation()
+        }
     }
 
     fun stopTrailCreation() {
@@ -176,19 +191,19 @@ class HomeViewModel(
     }
 
     private fun handleLocationClientException(exception: Throwable) {
-        /*        when (exception) {
-                    is LocationClient.LocationException -> {
-                        _uiState.update { it.copy(isLocationAvailable = false) }
-                    }
+        when (exception) {
+            is LocationClient.LocationException -> {
+                setLocationAvailability(false)
+            }
 
-                    is LocationClient.LocationNotAvailableException -> {
-                        _uiState.update { it.copy(isLocationAvailable = false) }
-                    }
+            is LocationClient.LocationNotAvailableException -> {
+                setLocationAvailability(false)
+            }
 
-                    is LocationClient.LocationPermissionNotGrantedException -> {
-                        _uiState.update { it.copy(isLocationAvailable = false) }
-                    }
-                }*/
+            is LocationClient.LocationPermissionNotGrantedException -> {
+                setLocationAvailability(false)
+            }
+        }
     }
 
     /**
