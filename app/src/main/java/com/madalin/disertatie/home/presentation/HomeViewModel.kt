@@ -49,6 +49,10 @@ class HomeViewModel(
         private const val ZOOM_LEVEL = 18f
     }
 
+    /**
+     * Enables location settings. If already enabled, it marks the location as available and starts
+     * fetching the user's location. If disabled, it launches [activityResultLauncher].
+     */
     fun enableLocationSettings(
         applicationContext: Context,
         activityResultLauncher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
@@ -243,11 +247,15 @@ class HomeViewModel(
      * Returns `true` if the camera position has changed due to a developer animation, otherwise
      * returns `false`.
      */
-    fun isCameraMovedByDeveloperAnimation(): Boolean {
+    private fun isCameraMovedByDeveloperAnimation(): Boolean {
         return _uiState.value.cameraPositionState.cameraMoveStartedReason ==
                 CameraMoveStartedReason.DEVELOPER_ANIMATION
     }
 
+    /**
+     * Determines if the user location button should be shown. It returns `true` if the camera is not
+     * positioned on the user's location and the camera has not been moved by a developer animation.
+     */
     fun isUserLocationButtonVisible(): Boolean {
         return !isCameraPositionedOnUser() && !isCameraMovedByDeveloperAnimation()
     }
