@@ -18,6 +18,7 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.home.domain.DefaultLocationClient
 import com.madalin.disertatie.home.domain.LocationClient
+import com.madalin.disertatie.home.domain.LocationState
 import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
 import com.madalin.disertatie.home.domain.extensions.toLatLng
 import com.madalin.disertatie.home.domain.model.TrailPoint
@@ -50,8 +51,8 @@ class HomeViewModel(
     }
 
     /**
-     * Enables location settings. If already enabled, it marks the location as available and starts
-     * fetching the user's location. If disabled, it launches [activityResultLauncher].
+     * Enables location settings. If already enabled, it starts fetching the user's location. If
+     * disabled, it launches [activityResultLauncher].
      */
     fun enableLocationSettings(
         applicationContext: Context,
@@ -59,13 +60,8 @@ class HomeViewModel(
     ) {
         requestLocationSettings(
             context = applicationContext,
-            onEnabled = {
-                setLocationAvailability(true)
-                startLocationFetching(applicationContext)
-            },
-            onDisabled = {
-                activityResultLauncher.launch(it)
-            }
+            onEnabled = { startLocationFetching(applicationContext) },
+            onDisabled = { activityResultLauncher.launch(it) }
         )
     }
 
@@ -83,11 +79,11 @@ class HomeViewModel(
                 handleUserLocatingException(it)
                 handleTrailCreationException(it)
             }
-            .onEach { location ->
-                if (location != null) {
-                    handleLocationAvailable(location)
-                } else {
-                    handleLocationNotAvailable()
+            .onEach { locationState ->
+                when (locationState) {
+                    is LocationState.LocationData -> handleLocationData(locationState)
+                    LocationState.LocationAvailable -> handleLocationAvailable()
+                    LocationState.LocationNotAvailable -> handleLocationNotAvailable()
                 }
             }
             .launchIn(locationFetchingScope)
@@ -98,11 +94,9 @@ class HomeViewModel(
         locationFetchingScope.cancel()
     }
 
-    private fun handleLocationAvailable(location: Location) {
+    private fun handleLocationData(locationData: LocationState.LocationData) {
+        val location = locationData.location
         val lastRegisteredLocation = _uiState.value.currentUserLocation
-
-        // sets the location availability state to true only if it was false before to avoid unnecessary updates
-        if (!_uiState.value.isLocationAvailable) setLocationAvailability(true)
 
         // if no trail point has been registered yet or if the distance between the last registered
         // location and the new location is longer than the minimum distance, then save the new location
@@ -113,8 +107,24 @@ class HomeViewModel(
         }
     }
 
+    /**
+     * Sets the location availability state to `true` only if it was `false` before to avoid
+     * unnecessary updates.
+     */
+    private fun handleLocationAvailable() {
+        if (!_uiState.value.isLocationAvailable) {
+            _uiState.update { it.copy(isLocationAvailable = true) }
+        }
+    }
+
+    /**
+     * Sets the location availability state to `false` only if it was `true` before to avoid
+     * unnecessary updates.
+     */
     private fun handleLocationNotAvailable() {
-        setLocationAvailability(false)
+        if (_uiState.value.isLocationAvailable) {
+            _uiState.update { it.copy(isLocationAvailable = false) }
+        }
     }
 
     /**
@@ -166,19 +176,19 @@ class HomeViewModel(
     }
 
     private fun handleLocationClientException(exception: Throwable) {
-        when (exception) {
-            is LocationClient.LocationException -> {
-                setLocationAvailability(false)
-            }
+        /*        when (exception) {
+                    is LocationClient.LocationException -> {
+                        _uiState.update { it.copy(isLocationAvailable = false) }
+                    }
 
-            is LocationClient.LocationNotAvailableException -> {
-                setLocationAvailability(false)
-            }
+                    is LocationClient.LocationNotAvailableException -> {
+                        _uiState.update { it.copy(isLocationAvailable = false) }
+                    }
 
-            is LocationClient.LocationPermissionNotGrantedException -> {
-                setLocationAvailability(false)
-            }
-        }
+                    is LocationClient.LocationPermissionNotGrantedException -> {
+                        _uiState.update { it.copy(isLocationAvailable = false) }
+                    }
+                }*/
     }
 
     /**
@@ -191,13 +201,6 @@ class HomeViewModel(
 
     fun hideStatusBanner() {
         globalDriver.handleAction(GlobalAction.HideStatusBanner)
-    }
-
-    /**
-     * Sets the location availability state to [isAvailable].
-     */
-    fun setLocationAvailability(isAvailable: Boolean) {
-        _uiState.update { it.copy(isLocationAvailable = isAvailable) }
     }
 
     /**

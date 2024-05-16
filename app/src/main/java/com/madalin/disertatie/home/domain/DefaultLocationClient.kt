@@ -2,7 +2,6 @@ package com.madalin.disertatie.home.domain
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.location.Location
 import android.os.Looper
 import android.util.Log
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -28,7 +27,7 @@ class DefaultLocationClient(
     private val locationClient: FusedLocationProviderClient
 ) : LocationClient {
     @SuppressLint("MissingPermission")
-    override fun getLocationUpdates(interval: Long): Flow<Location?> {
+    override fun getLocationUpdates(interval: Long): Flow<LocationState> {
         return callbackFlow {
             if (!context.hasLocationPermission()) throw LocationClient.LocationPermissionNotGrantedException()
             if (!context.isLocationServiceEnabled()) throw LocationClient.LocationNotAvailableException()
@@ -43,10 +42,11 @@ class DefaultLocationClient(
             val locationCallback = object : LocationCallback() {
                 override fun onLocationResult(result: LocationResult) {
                     super.onLocationResult(result)
+
                     // get the last location from the results (if any)
                     result.locations.lastOrNull()?.let { location ->
                         launch {
-                            send(location)
+                            send(LocationState.LocationData(location))
                             Log.d("DefaultLocationClient", "Obtained: ${location.str()}")
                         }
                     }
@@ -54,11 +54,11 @@ class DefaultLocationClient(
 
                 override fun onLocationAvailability(locationAvailability: LocationAvailability) {
                     super.onLocationAvailability(locationAvailability)
-                    // location not available
-                    if (!locationAvailability.isLocationAvailable) {
-                        launch {
-                            send(null)
-                        }
+
+                    if (locationAvailability.isLocationAvailable) {
+                        launch { send(LocationState.LocationAvailable) }
+                    } else { // location not available
+                        launch { send(LocationState.LocationNotAvailable) }
                     }
                 }
             }

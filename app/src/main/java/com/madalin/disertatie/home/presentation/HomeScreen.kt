@@ -73,10 +73,7 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
         onResult = { activityResult ->
             if (activityResult.resultCode == Activity.RESULT_OK) {
                 viewModel.showStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled)
-                viewModel.setLocationAvailability(true)
                 viewModel.startLocationFetching(applicationContext)
-            } else {
-                viewModel.setLocationAvailability(false)
             }
         }
     )

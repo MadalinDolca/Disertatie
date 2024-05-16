@@ -7,7 +7,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.madalin.disertatie.home.domain.model.TrailPoint
 
 data class HomeUiState(
-    val isLocationAvailable: Boolean = false,
+    val isLocationAvailable: Boolean = true,
     val isCreatingTrail: Boolean = false,
 
     val trailPointsList: List<TrailPoint> = emptyList(),

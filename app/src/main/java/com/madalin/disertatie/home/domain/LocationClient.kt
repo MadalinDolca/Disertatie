@@ -1,6 +1,5 @@
 package com.madalin.disertatie.home.domain
 
-import android.location.Location
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -8,15 +7,17 @@ import kotlinx.coroutines.flow.Flow
  */
 interface LocationClient {
     /**
-     * Returns a cold [Flow] that emits the location of the device with this [interval] in milliseconds.
-     * If the location is available it emits the [Location], otherwise it emits `null`.
-     * Checks location permission and GPS status before requesting updates.
+     * Returns a cold [Flow] that emits the [location state][LocationState] of the device with this
+     * [interval] in milliseconds. If the location is available it emits the
+     * [availability][LocationState.LocationAvailable] and the [location data][LocationState.LocationData],
+     * otherwise it emits the [unavailability][LocationState.LocationNotAvailable].
+     * Checks the location permissions and GPS status before requesting updates.
      *
      * @throws [LocationException] if an error occurs while getting the location
      * @throws [LocationPermissionNotGrantedException] if location permission is not granted
      * @throws [LocationNotAvailableException] if GPS is disabled
      */
-    fun getLocationUpdates(interval: Long): Flow<Location?>
+    fun getLocationUpdates(interval: Long): Flow<LocationState>
 
     /**
      * Exception class for location related errors with a [message].
