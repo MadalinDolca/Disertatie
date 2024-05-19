@@ -2,16 +2,15 @@ package com.madalin.disertatie.home.domain.model
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
-import java.util.Date
 
 @Parcelize
 data class TrailPoint(
+    val timestamp: Long,
     val latitude: Double,
     val longitude: Double,
     val altitude: Double,
     val accuracy: Float,
-    val timestamp: Date,
-    val note: String? = null,
-    val imagesList: List<String> = emptyList(),
+    var note: String? = null,
+    val imagesList: MutableList<String> = mutableListOf(),
     val temperature: Double? = null,
 ) : Parcelable

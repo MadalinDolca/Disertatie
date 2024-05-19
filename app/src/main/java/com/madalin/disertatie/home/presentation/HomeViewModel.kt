@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Date
 
 class HomeViewModel(
     private val globalDriver: GlobalDriver,
@@ -56,41 +56,31 @@ class HomeViewModel(
      * disabled, it launches [activityResultLauncher].
      */
     fun enableLocationSettings(
-        applicationContext: Context,
-        activityResultLauncher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
+        applicationContext: Context, activityResultLauncher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
     ) {
-        requestLocationSettings(
-            context = applicationContext,
-            onEnabled = {
-                startLocationFetching(applicationContext)
-                setLocationAvailability(true)
-            },
-            onDisabled = { activityResultLauncher.launch(it) }
-        )
+        requestLocationSettings(context = applicationContext, onEnabled = {
+            startLocationFetching(applicationContext)
+            setLocationAvailability(true)
+        }, onDisabled = { activityResultLauncher.launch(it) })
     }
 
     fun startLocationFetching(applicationContext: Context) {
         locationFetchingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         locationClient = DefaultLocationClient(
-            applicationContext,
-            LocationServices.getFusedLocationProviderClient(applicationContext)
+            applicationContext, LocationServices.getFusedLocationProviderClient(applicationContext)
         )
 
-        locationClient
-            .getLocationUpdates(1000L)
-            .catch {
-                handleUserLocatingException(it)
-                handleTrailCreationException(it)
+        locationClient.getLocationUpdates(1000L).catch {
+            handleUserLocatingException(it)
+            handleTrailCreationException(it)
+        }.onEach { locationState ->
+            when (locationState) {
+                is LocationState.LocationData -> handleLocationData(locationState)
+                LocationState.LocationAvailable -> handleLocationAvailable()
+                LocationState.LocationNotAvailable -> handleLocationNotAvailable()
             }
-            .onEach { locationState ->
-                when (locationState) {
-                    is LocationState.LocationData -> handleLocationData(locationState)
-                    LocationState.LocationAvailable -> handleLocationAvailable()
-                    LocationState.LocationNotAvailable -> handleLocationNotAvailable()
-                }
-            }
-            .launchIn(locationFetchingScope)
+        }.launchIn(locationFetchingScope)
     }
 
     fun stopLocationFetching() {
@@ -154,28 +144,34 @@ class HomeViewModel(
         }
     }
 
+    fun pauseTrailCreation() {
+        _uiState.update { it.copy(isCreatingTrailPaused = true) }
+    }
+
+    fun resumeTrailCreation() {
+        _uiState.update { it.copy(isCreatingTrailPaused = false) }
+    }
+
     fun stopTrailCreation() {
+        // TODO stop trail creation and save the data
         _uiState.update {
             it.copy(
-                isCreatingTrail = false,
-                trailPointsList = emptyList()
+                isCreatingTrail = false, trailPointsList = mutableStateListOf()
             )
         }
     }
 
     private fun updateTrail(location: Location) {
         val newTrailPoint = TrailPoint(
-            latitude = location.latitude,
-            longitude = location.longitude,
-            altitude = location.altitude,
-            accuracy = location.accuracy,
-            timestamp = Date()
+            timestamp = location.time, latitude = location.latitude, longitude = location.longitude, altitude = location.altitude, accuracy = location.accuracy
         )
 
         // adds the new location to the list of trail points
-        _uiState.update { currentState ->
+        _uiState.value.trailPointsList.add(newTrailPoint)
+        // TODO update trail points list
+        /*_uiState.update { currentState ->
             currentState.copy(trailPointsList = currentState.trailPointsList + newTrailPoint)
-        }
+        }*/
     }
 
     private fun handleUserLocatingException(exception: Throwable) {
@@ -257,8 +253,7 @@ class HomeViewModel(
      * otherwise returns `false`.
      */
     private fun isCameraMovedByGestures(): Boolean {
-        return _uiState.value.cameraPositionState.cameraMoveStartedReason ==
-                CameraMoveStartedReason.GESTURE
+        return _uiState.value.cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE
     }
 
     /**
@@ -266,8 +261,7 @@ class HomeViewModel(
      * returns `false`.
      */
     private fun isCameraMovedByDeveloperAnimation(): Boolean {
-        return _uiState.value.cameraPositionState.cameraMoveStartedReason ==
-                CameraMoveStartedReason.DEVELOPER_ANIMATION
+        return _uiState.value.cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.DEVELOPER_ANIMATION
     }
 
     /**
@@ -276,6 +270,46 @@ class HomeViewModel(
      */
     fun isUserLocationButtonVisible(): Boolean {
         return !isCameraPositionedOnUser() && !isCameraMovedByDeveloperAnimation()
+    }
+
+    /**
+     * Shows the add trail info dialog and pauses the trail creation.
+     */
+    fun showTrailPointInfoModal() {
+        if (_uiState.value.trailPointsList.isNotEmpty()) {
+            _uiState.update {
+                it.copy(
+                    selectedTrailPoint = _uiState.value.trailPointsList.last(), isTrailPointInfoModalVisible = true, isCreatingTrailPaused = true
+                )
+            }
+        } else {
+            showStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_registered_yet)
+        }
+    }
+
+    /**
+     * Hides the add trail info dialog and resumes the trail creation.
+     */
+    fun hideAddTrailInfoDialog() {
+        _uiState.update {
+            it.copy(
+                selectedTrailPoint = null,
+                isTrailPointInfoModalVisible = false,
+                isCreatingTrailPaused = false
+            )
+        }
+    }
+
+    fun updateTrailPoint(imagesList: List<String>, note: String) {
+        val selectedTrailPoint = _uiState.value.selectedTrailPoint
+        val selectedTrailPointIndex = _uiState.value.trailPointsList.indexOf(selectedTrailPoint)
+
+        _uiState.value.trailPointsList[selectedTrailPointIndex].apply {
+            this.imagesList.addAll(imagesList)
+            this.note = note
+        }
+
+        Log.d("HomeViewModel", "updateTrailPoint: ${_uiState.value.trailPointsList[selectedTrailPointIndex]}")
     }
 
     fun logout() {

@@ -4,15 +4,23 @@ import android.location.Location
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.madalin.disertatie.home.domain.model.Trail
 import com.madalin.disertatie.home.domain.model.TrailPoint
 
 data class HomeUiState(
     val isLocationAvailable: Boolean = true,
     val isCreatingTrail: Boolean = false,
+    val isCreatingTrailPaused: Boolean = false,
 
-    val trailPointsList: List<TrailPoint> = emptyList(),
     val currentUserLocation: Location? = null,
+    val trail: Trail? = null,
+    val trailPointsList: MutableList<TrailPoint> = mutableListOf(),
 
+    // trail point info modal bottom sheet
+    val selectedTrailPoint: TrailPoint? = null,
+    val isTrailPointInfoModalVisible: Boolean = false,
+
+    // camera and map
     val cameraPositionState: CameraPositionState = CameraPositionState(),
     val mapProperties: MapProperties = MapProperties(isMyLocationEnabled = false),
     val mapUiSettings: MapUiSettings = MapUiSettings(

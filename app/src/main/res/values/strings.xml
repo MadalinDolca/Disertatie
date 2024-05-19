@@ -52,4 +52,15 @@
     <string name="location_is_not_available_it_might_be_disabled">Location is not available. It might be disabled.</string>
     <string name="create_trail">Create trail</string>
     <string name="stop">Stop</string>
+    <string name="add_info">Add info</string>
+    <string name="cancel">Cancel</string>
+    <string name="add_notes">Add notes</string>
+    <string name="add_weather_info">Add weather info</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="altitude">Altitude</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="timestamp">Timestamp</string>
+    <string name="tap_to_add_weather_info">Tap to add weather info</string>
+    <string name="no_trail_point_has_been_registered_yet">No trail point has been registered yet</string>
 </resources>

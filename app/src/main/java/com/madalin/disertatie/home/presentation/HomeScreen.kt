@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.PostAdd
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +39,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -59,10 +61,12 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.presentation.components.LocationNotAvailableBanner
+import com.madalin.disertatie.home.presentation.components.TrailPointInfoModalBottomSheet
 import com.madalin.disertatie.home.presentation.components.UserMarker
 import com.madalin.disertatie.home.presentation.util.LocationPermissionsHandler
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
     MapsInitializer.initialize(LocalContext.current)
@@ -121,8 +125,28 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
                 isCreatingTrail = uiState.isCreatingTrail,
                 isUserLocationButtonVisible = viewModel.isUserLocationButtonVisible(),
                 onMoveCameraClick = viewModel::moveCameraToUserLocation,
-                onButtonClick = { }
+                onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
             )
+
+            uiState.selectedTrailPoint?.let { selectedTrailPoint ->
+                TrailPointInfoModalBottomSheet(
+                    isVisible = uiState.isTrailPointInfoModalVisible,
+                    sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true, // fully expanded
+                        confirmValueChange = { false } // not dismissible when clicked outside of the sheet
+                    ),
+                    trailPoint = selectedTrailPoint,
+                    onDismiss = viewModel::hideAddTrailInfoDialog,
+                    onTakePictureClick = {},
+                    onAddWeatherInfoClick = {},
+                    onUpdateTrailPointClick = { imagesList, note ->
+                        viewModel.updateTrailPoint(
+                            imagesList = imagesList,
+                            note = note
+                        )
+                    },
+                )
+            }
         }
     }
 }
@@ -173,7 +197,7 @@ private fun MapControls(
     isCreatingTrail: Boolean,
     isUserLocationButtonVisible: Boolean,
     onMoveCameraClick: () -> Unit,
-    onButtonClick: () -> Unit,
+    onShowTrailPointInfoModalClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -192,7 +216,7 @@ private fun MapControls(
                 exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start)
             ) {
                 AddTrailInfoButton(
-                    onClick = onButtonClick,
+                    onClick = onShowTrailPointInfoModalClick,
                     modifier = Modifier.padding(end = Dimens.container)
                 )
             }
@@ -209,7 +233,7 @@ private fun MapControls(
             ) {
                 UserLocationButton(
                     userLocation = userLocation,
-                    onMoveCameraClick = onMoveCameraClick,
+                    onClick = onMoveCameraClick,
                     modifier = Modifier.padding(start = Dimens.container)
                 )
             }
@@ -259,11 +283,11 @@ private fun CreateTrailFAB(
 @Composable
 private fun UserLocationButton(
     userLocation: Location?,
-    onMoveCameraClick: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     IconButton(
-        onClick = onMoveCameraClick,
+        onClick = onClick,
         modifier = modifier.size(Dimens.iconButtonContainerSize),
         enabled = userLocation != null,
         colors = IconButtonDefaults.filledIconButtonColors(
