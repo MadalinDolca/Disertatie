@@ -49,6 +49,7 @@ import com.madalin.disertatie.core.presentation.theme.DisertatieTheme
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.presentation.util.LightDarkPreview
 import com.madalin.disertatie.home.domain.model.TrailPoint
+import com.madalin.disertatie.home.presentation.util.CameraPermissionHandler
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -67,7 +68,7 @@ fun TrailPointInfoModal(
     onUpdateTrailPointClick: (List<String>, String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
     val imagesList by remember { mutableStateOf(trailPoint.imagesList) }
     var note by remember { mutableStateOf(trailPoint.note) }
     var hasWarning by remember { mutableStateOf(trailPoint.hasWarning) }
@@ -87,7 +88,7 @@ fun TrailPointInfoModal(
             ) {
                 ImagesRow(
                     onTakePictureClick = onTakePictureClick,
-                    items = trailPoint.imagesList
+                    images = trailPoint.imagesList
                 )
 
                 OutlinedTextField(
@@ -129,7 +130,7 @@ fun TrailPointInfoModal(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     FilledTonalButton(onClick = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                             if (!sheetState.isVisible) onDismiss()
                         }
                     }) {
@@ -137,7 +138,7 @@ fun TrailPointInfoModal(
                     }
                     Button(onClick = {
                         onUpdateTrailPointClick(imagesList, note, hasWarning)
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
                             if (!sheetState.isVisible) onDismiss()
                         }
                     }) {
@@ -152,13 +153,25 @@ fun TrailPointInfoModal(
 @Composable
 private fun ImagesRow(
     onTakePictureClick: () -> Unit,
-    items: List<String>,
+    images: List<String>,
     modifier: Modifier = Modifier
 ) {
+    var isPermissionDialogVisible by remember { mutableStateOf(false) }
+    var isCameraDialogVisible by remember { mutableStateOf(false) }
+
+    if (isPermissionDialogVisible) {
+        CameraPermissionHandler(onPermissionGranted = { isCameraDialogVisible = true })
+    }
+
+    if (isPermissionDialogVisible) {
+        //onTakePictureClick()
+        CameraDialog(onDismiss = { isPermissionDialogVisible = false })
+    }
+
     Row(modifier = modifier.horizontalScroll(rememberScrollState())) {
-        for (item in items) {
+        for (image in images) {
             Card(
-                onClick = onTakePictureClick,
+                onClick = { },
                 modifier = Modifier.size(75.dp)
             ) {
                 Icon(
@@ -171,9 +184,10 @@ private fun ImagesRow(
             }
         }
 
-        if (items.size < 3) {
+        // add image button
+        if (images.size < 3) {
             Card(
-                onClick = onTakePictureClick,
+                onClick = { isPermissionDialogVisible = true },
                 modifier = Modifier.size(75.dp)
             ) {
                 Icon(

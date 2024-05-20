@@ -1,4 +1,4 @@
-package com.madalin.disertatie.home.presentation
+package com.madalin.disertatie.home.presentation.components
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button

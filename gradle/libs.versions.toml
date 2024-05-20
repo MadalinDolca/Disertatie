@@ -23,6 +23,7 @@ accompanistPermissions = "0.34.0"
 playServicesLocation = "21.2.0"
 mapsCompose = "4.4.1"
 secretsGradlePlugin = "2.0.1"
+cameraX = "1.2.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -81,6 +82,14 @@ maps-compose-widgets = { module = "com.google.maps.android:maps-compose-widgets"
 
 # Google Secrets
 secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
+
+# CameraX
+camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraX" }
+camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraX" }
+camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraX" }
+camera-video = { module = "androidx.camera:camera-video", version.ref = "cameraX" }
+camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraX" }
+camera-extensions = { module = "androidx.camera:camera-extensions", version.ref = "cameraX" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

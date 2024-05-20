@@ -10,9 +10,9 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.madalin.disertatie.core.domain.util.isPermanentlyDeclined
 import com.madalin.disertatie.home.domain.extensions.openAppSettings
-import com.madalin.disertatie.home.presentation.CoarseLocationPermissionTextProvider
-import com.madalin.disertatie.home.presentation.FineLocationPermissionTextProvider
-import com.madalin.disertatie.home.presentation.PermissionDialog
+import com.madalin.disertatie.home.presentation.components.CoarseLocationPermissionTextProvider
+import com.madalin.disertatie.home.presentation.components.FineLocationPermissionTextProvider
+import com.madalin.disertatie.home.presentation.components.PermissionDialog
 
 /**
  * Shows a [PermissionDialog] if the location permissions are not granted. If granted, calls

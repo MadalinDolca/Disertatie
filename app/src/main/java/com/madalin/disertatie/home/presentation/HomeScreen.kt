@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.maps.MapsInitializer
@@ -292,6 +293,7 @@ private fun CreateTrailFAB(
     onStopTrailCreationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentView = LocalView.current
     ExtendedFloatingActionButton(
         text = {
             Text(
@@ -301,8 +303,13 @@ private fun CreateTrailFAB(
         },
         icon = { Icon(imageVector = Icons.Rounded.Route, contentDescription = null) },
         onClick = {
-            if (!isCreatingTrail) onStartTrailCreationClick()
-            else onStopTrailCreationClick()
+            if (!isCreatingTrail) {
+                onStartTrailCreationClick()
+                currentView.keepScreenOn = true
+            } else {
+                onStopTrailCreationClick()
+                currentView.keepScreenOn = false
+            }
         },
         modifier = modifier,
         expanded = isLocationAvailable || isCreatingTrail,
