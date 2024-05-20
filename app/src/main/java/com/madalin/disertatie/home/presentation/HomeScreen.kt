@@ -2,6 +2,7 @@ package com.madalin.disertatie.home.presentation
 
 import android.app.Activity
 import android.location.Location
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -50,7 +51,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.maps.MapsInitializer
+import com.google.android.gms.maps.model.CustomCap
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.RoundCap
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
@@ -59,11 +62,14 @@ import com.google.maps.android.compose.Polyline
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.home.domain.extensions.toLatLng
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.presentation.components.LocationNotAvailableBanner
-import com.madalin.disertatie.home.presentation.components.TrailPointInfoModalBottomSheet
+import com.madalin.disertatie.home.presentation.components.TrailPointInfoMarker
+import com.madalin.disertatie.home.presentation.components.TrailPointInfoModal
 import com.madalin.disertatie.home.presentation.components.UserMarker
 import com.madalin.disertatie.home.presentation.util.LocationPermissionsHandler
+import com.madalin.disertatie.home.presentation.util.bitmapDescriptor
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,6 +123,7 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
                 userLocation = uiState.currentUserLocation,
                 trailPointsList = uiState.trailPointsList,
                 onEnableLocationClick = { viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest) },
+                onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
             )
 
             MapControls(
@@ -129,22 +136,23 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
             )
 
             uiState.selectedTrailPoint?.let { selectedTrailPoint ->
-                TrailPointInfoModalBottomSheet(
+                TrailPointInfoModal(
                     isVisible = uiState.isTrailPointInfoModalVisible,
                     sheetState = rememberModalBottomSheetState(
                         skipPartiallyExpanded = true, // fully expanded
                         confirmValueChange = { false } // not dismissible when clicked outside of the sheet
                     ),
                     trailPoint = selectedTrailPoint,
-                    onDismiss = viewModel::hideAddTrailInfoDialog,
+                    onDismiss = viewModel::hideTrailPointInfoModal,
                     onTakePictureClick = {},
                     onAddWeatherInfoClick = {},
-                    onUpdateTrailPointClick = { imagesList, note ->
+                    onUpdateTrailPointClick = { imagesList, note, hasWarning ->
                         viewModel.updateTrailPoint(
                             imagesList = imagesList,
-                            note = note
+                            note = note,
+                            hasWarning = hasWarning
                         )
-                    },
+                    }
                 )
             }
         }
@@ -161,6 +169,7 @@ private fun MapContainer(
     userLocation: Location?,
     trailPointsList: List<TrailPoint>,
     onEnableLocationClick: () -> Unit,
+    onShowTrailPointInfoModalClick: (TrailPoint?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
@@ -169,17 +178,42 @@ private fun MapContainer(
             properties = mapProperties,
             uiSettings = mapUiSettings
         ) {
-            // path will not be shown if creation is stopped
-            if (isCreatingTrail) {
-                Polyline(
-                    points = trailPointsList.map { LatLng(it.latitude, it.longitude) },
-                    color = Color.Red,
-                    width = 10f
-                )
+            if (userLocation != null) {
+                UserMarker(coordinates = userLocation.toLatLng())
             }
 
-            if (userLocation != null) {
-                UserMarker(userLocation = userLocation)
+            // path will not be shown if creation is stopped
+            if (isCreatingTrail) {
+                /* trailPointsList.firstOrNull()?.let {
+                     TrailStartMarker(
+                         coordinates = it.toLatLng(),
+                         trail = null
+                     )
+                 }*/
+
+                // shows the info markers on the map
+                for (trailPoint in trailPointsList) {
+                    if (trailPoint.note.isNotEmpty()
+                        || trailPoint.imagesList.isNotEmpty()
+                        || trailPoint.hasWarning
+                    ) {
+                        TrailPointInfoMarker(
+                            trailPoint = trailPoint,
+                            onClick = { onShowTrailPointInfoModalClick(trailPoint) }
+                        )
+                    }
+                }
+
+                val startCapBitmap = bitmapDescriptor(context = LocalContext.current, vectorResId = R.drawable.dot)!!
+                Polyline(
+                    points = trailPointsList.map { LatLng(it.latitude, it.longitude) },
+                    clickable = true,
+                    color = Color(0xFF0040FF),
+                    startCap = CustomCap(startCapBitmap),
+                    endCap = RoundCap(),
+                    width = 15f,
+                    onClick = { Log.d("MapContainer", "polyline clicked") }
+                )
             }
         }
 

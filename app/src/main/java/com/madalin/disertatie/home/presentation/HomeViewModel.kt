@@ -91,12 +91,19 @@ class HomeViewModel(
     private fun handleLocationData(locationData: LocationState.LocationData) {
         val location = locationData.location
         val lastRegisteredLocation = _uiState.value.currentUserLocation
+        val isCreatingTrail = _uiState.value.isCreatingTrail
+        val trailPointList = _uiState.value.trailPointsList
 
-        // if no trail point has been registered yet or if the distance between the last registered
-        // location and the new location is longer than the minimum distance, then save the new location
-        if (lastRegisteredLocation == null || lastRegisteredLocation.distanceTo(location) >= MIN_DISTANCE) {
+        // if no trail point has been registered yet
+        // or if the trail creation is started and the list is empty
+        // or if the distance between the last registered location and the new location is longer
+        // than the minimum distance, then save the new location
+        if (lastRegisteredLocation == null
+            || (trailPointList.isEmpty() && isCreatingTrail)
+            || lastRegisteredLocation.distanceTo(location) >= MIN_DISTANCE
+        ) {
             updateUserLocation(location)
-            if (_uiState.value.isCreatingTrail) updateTrail(location)
+            if (isCreatingTrail) updateTrail(location)
             if (!isCameraMovedByGestures()) moveCameraToUserLocation() // doesn't move the camera if the camera has been dragged
         }
     }
@@ -273,13 +280,19 @@ class HomeViewModel(
     }
 
     /**
-     * Shows the add trail info dialog and pauses the trail creation.
+     * Shows the trail point info dialog of this [trailPoint] and pauses the trail creation.
+     * If the [trailPoint] is `null`, it shows the last registered trail point.
      */
-    fun showTrailPointInfoModal() {
-        if (_uiState.value.trailPointsList.isNotEmpty()) {
+    fun showTrailPointInfoModal(trailPoint: TrailPoint? = null) {
+        val trailPointsList = _uiState.value.trailPointsList
+        val selectedPoint = trailPoint ?: trailPointsList.lastOrNull()
+
+        if (selectedPoint != null) {
             _uiState.update {
                 it.copy(
-                    selectedTrailPoint = _uiState.value.trailPointsList.last(), isTrailPointInfoModalVisible = true, isCreatingTrailPaused = true
+                    selectedTrailPoint = selectedPoint,
+                    isTrailPointInfoModalVisible = true,
+                    isCreatingTrailPaused = true
                 )
             }
         } else {
@@ -288,9 +301,9 @@ class HomeViewModel(
     }
 
     /**
-     * Hides the add trail info dialog and resumes the trail creation.
+     * Hides the trail point info modal and resumes the trail creation.
      */
-    fun hideAddTrailInfoDialog() {
+    fun hideTrailPointInfoModal() {
         _uiState.update {
             it.copy(
                 selectedTrailPoint = null,
@@ -300,16 +313,15 @@ class HomeViewModel(
         }
     }
 
-    fun updateTrailPoint(imagesList: List<String>, note: String) {
+    fun updateTrailPoint(imagesList: List<String>, note: String, hasWarning: Boolean) {
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
         val selectedTrailPointIndex = _uiState.value.trailPointsList.indexOf(selectedTrailPoint)
 
         _uiState.value.trailPointsList[selectedTrailPointIndex].apply {
             this.imagesList.addAll(imagesList)
             this.note = note
+            this.hasWarning = hasWarning
         }
-
-        Log.d("HomeViewModel", "updateTrailPoint: ${_uiState.value.trailPointsList[selectedTrailPointIndex]}")
     }
 
     fun logout() {

@@ -2,6 +2,7 @@ package com.madalin.disertatie.home.domain.extensions
 
 import android.location.Location
 import com.google.android.gms.maps.model.LatLng
+import com.madalin.disertatie.home.domain.model.TrailPoint
 
 /**
  * Returns the latitude and longitude of this [Location] as a [LatLng].
@@ -19,3 +20,8 @@ fun Location.str() = "$latitude, $longitude"
 infix fun LatLng.hasSameCoordinates(other: LatLng) =
     String.format("%.6f", this.latitude) == String.format("%.6f", other.latitude)
             && String.format("%.6f", this.longitude) == String.format("%.6f", other.longitude)
+
+/**
+ * Returns the latitude and longitude of this [TrailPoint] as a [LatLng].
+ */
+fun TrailPoint.toLatLng() = LatLng(this.latitude, this.longitude)

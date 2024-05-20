@@ -29,38 +29,48 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.madalin.disertatie.R
+import com.madalin.disertatie.core.presentation.theme.DisertatieTheme
 import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.core.presentation.util.LightDarkPreview
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import kotlinx.coroutines.launch
 import java.util.Date
 
+/**
+ * [ModalBottomSheet] used to display, add and modify [trailPoint] info.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrailPointInfoModalBottomSheet(
+fun TrailPointInfoModal(
     isVisible: Boolean,
     sheetState: SheetState,
     trailPoint: TrailPoint,
     onDismiss: () -> Unit,
     onTakePictureClick: () -> Unit,
     onAddWeatherInfoClick: () -> Unit,
-    onUpdateTrailPointClick: (List<String>, String) -> Unit,
+    onUpdateTrailPointClick: (List<String>, String, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
-    var note by remember { mutableStateOf(trailPoint.note ?: "") }
     val imagesList by remember { mutableStateOf(trailPoint.imagesList) }
+    var note by remember { mutableStateOf(trailPoint.note) }
+    var hasWarning by remember { mutableStateOf(trailPoint.hasWarning) }
 
     if (isVisible) {
         ModalBottomSheet(
@@ -72,7 +82,7 @@ fun TrailPointInfoModalBottomSheet(
             Column(
                 modifier = Modifier
                     .verticalScroll(rememberScrollState())
-                    .padding(Dimens.container),
+                    .padding(horizontal = Dimens.container),
                 verticalArrangement = Arrangement.spacedBy(space = Dimens.separator)
             ) {
                 ImagesRow(
@@ -98,9 +108,19 @@ fun TrailPointInfoModalBottomSheet(
                     onAddWeatherInfoClick = onAddWeatherInfoClick
                 )
 
-                GeographicalData(
-                    trailPoint = trailPoint
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = stringResource(R.string.mark_as_warning))
+                    Switch(
+                        checked = hasWarning,
+                        onCheckedChange = { hasWarning = it }
+                    )
+                }
+
+                GeographicalData(trailPoint = trailPoint)
 
                 Row(
                     modifier = Modifier
@@ -116,12 +136,12 @@ fun TrailPointInfoModalBottomSheet(
                         Text(text = stringResource(R.string.cancel))
                     }
                     Button(onClick = {
-                        onUpdateTrailPointClick(imagesList, note)
+                        onUpdateTrailPointClick(imagesList, note, hasWarning)
                         scope.launch { sheetState.hide() }.invokeOnCompletion {
                             if (!sheetState.isVisible) onDismiss()
                         }
                     }) {
-                        Text(text = stringResource(R.string.add_info))
+                        Text(text = stringResource(R.string.save))
                     }
                 }
             }
@@ -208,35 +228,28 @@ fun GeographicalData(
     }
 }
 
-/*
 @OptIn(ExperimentalMaterial3Api::class)
 @LightDarkPreview
 @Composable
-private fun AddTrailInfoDialogPreview() {
+private fun TrailPointInfoModalPreview() {
     DisertatieTheme {
         Surface {
-            TrailPointInfoModalBottomSheet(
+            TrailPointInfoModal(
                 isVisible = true,
-                sheetState = rememberStandardBottomSheetState(
-                    initialValue = SheetValue.Expanded
-                ),
+                sheetState = rememberStandardBottomSheetState(),
                 trailPoint = TrailPoint(
                     latitude = 10.12345,
                     longitude = 21.01234,
                     altitude = 7.98765,
                     accuracy = 0f,
                     timestamp = 10L,
-                    note = null,
-                    imagesList = emptyList(),
                     temperature = 0.0
                 ),
-                userLocation = null,
-                onDismiss = {},
-                onTakePictureClick = {},
-                onUpdateNote = {},
-                onAddWeatherInfoClick = {},
-                onAddInfoClick = {}
+                onDismiss = { /*TODO*/ },
+                onTakePictureClick = { /*TODO*/ },
+                onAddWeatherInfoClick = { /*TODO*/ },
+                onUpdateTrailPointClick = { _, _, _ -> }
             )
         }
     }
-}*/
+}

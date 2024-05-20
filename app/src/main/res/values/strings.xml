@@ -63,4 +63,9 @@
     <string name="timestamp">Timestamp</string>
     <string name="tap_to_add_weather_info">Tap to add weather info</string>
     <string name="no_trail_point_has_been_registered_yet">No trail point has been registered yet</string>
+    <string name="this_is_the_starting_point">This is the starting point</string>
+    <string name="trail_name">Trail name</string>
+    <string name="length">Length</string>
+    <string name="save">Save</string>
+    <string name="mark_as_warning">Mark as warning</string>
 </resources>
