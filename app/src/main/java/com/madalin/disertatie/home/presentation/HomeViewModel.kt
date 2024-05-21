@@ -56,31 +56,40 @@ class HomeViewModel(
      * disabled, it launches [activityResultLauncher].
      */
     fun enableLocationSettings(
-        applicationContext: Context, activityResultLauncher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
+        applicationContext: Context,
+        activityResultLauncher: ManagedActivityResultLauncher<IntentSenderRequest, ActivityResult>
     ) {
-        requestLocationSettings(context = applicationContext, onEnabled = {
-            startLocationFetching(applicationContext)
-            setLocationAvailability(true)
-        }, onDisabled = { activityResultLauncher.launch(it) })
+        requestLocationSettings(
+            context = applicationContext,
+            onEnabled = {
+                startLocationFetching(applicationContext)
+                setLocationAvailability(true)
+            },
+            onDisabled = { activityResultLauncher.launch(it) })
     }
 
+    /**
+     * Starts fetching the location using this [applicationContext] for the [LocationClient].
+     * It prevents the [LocationClient] from spawning multiple flows if is already getting updates.
+     * It handles each [LocationState] collection and thrown exceptions.
+     */
     fun startLocationFetching(applicationContext: Context) {
+        if (::locationClient.isInitialized && locationClient.isGettingLocationUpdates) return
+
         locationFetchingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        locationClient = DefaultLocationClient(applicationContext, LocationServices.getFusedLocationProviderClient(applicationContext))
 
-        locationClient = DefaultLocationClient(
-            applicationContext, LocationServices.getFusedLocationProviderClient(applicationContext)
-        )
-
-        locationClient.getLocationUpdates(1000L).catch {
-            handleUserLocatingException(it)
-            handleTrailCreationException(it)
-        }.onEach { locationState ->
-            when (locationState) {
-                is LocationState.LocationData -> handleLocationData(locationState)
-                LocationState.LocationAvailable -> handleLocationAvailable()
-                LocationState.LocationNotAvailable -> handleLocationNotAvailable()
-            }
-        }.launchIn(locationFetchingScope)
+        locationClient.getLocationUpdates(1000L)
+            .catch {
+                handleUserLocatingException(it)
+                handleTrailCreationException(it)
+            }.onEach { locationState ->
+                when (locationState) {
+                    is LocationState.LocationData -> handleLocationData(locationState)
+                    LocationState.LocationAvailable -> handleLocationAvailable()
+                    LocationState.LocationNotAvailable -> handleLocationNotAvailable()
+                }
+            }.launchIn(locationFetchingScope)
     }
 
     fun stopLocationFetching() {

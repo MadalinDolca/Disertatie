@@ -20,15 +20,20 @@ import kotlinx.coroutines.launch
 
 /**
  * Default implementation of [LocationClient] that uses [FusedLocationProviderClient].
- * This class checks for location permissions and enabled providers before requesting updates.
  */
 class DefaultLocationClient(
     private val context: Context,
     private val locationClient: FusedLocationProviderClient
 ) : LocationClient {
+    override var isGettingLocationUpdates = false
+
     @SuppressLint("MissingPermission")
     override fun getLocationUpdates(interval: Long): Flow<LocationState> {
+        Log.d("DefaultLocationClient", "getLocationUpdates")
+
         return callbackFlow {
+            isGettingLocationUpdates = true
+
             if (!context.hasLocationPermission()) throw LocationClient.LocationPermissionNotGrantedException()
             if (!context.isLocationServiceEnabled()) throw LocationClient.LocationNotAvailableException()
 
@@ -72,6 +77,7 @@ class DefaultLocationClient(
 
             // cancel location updates when the flow is collected (i.e. when the consumer stops listening)
             awaitClose {
+                isGettingLocationUpdates = false
                 locationClient.removeLocationUpdates(locationCallback)
                 Log.d("DefaultLocationClient", "removeLocationUpdates")
             }

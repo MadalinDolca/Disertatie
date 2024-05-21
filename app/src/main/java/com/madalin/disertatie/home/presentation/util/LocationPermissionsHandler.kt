@@ -4,6 +4,10 @@ package com.madalin.disertatie.home.presentation.util
 
 import android.Manifest
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -15,12 +19,16 @@ import com.madalin.disertatie.home.presentation.components.FineLocationPermissio
 import com.madalin.disertatie.home.presentation.components.PermissionDialog
 
 /**
- * Shows a [PermissionDialog] if the location permissions are not granted. If granted, calls
+ * Shows a [PermissionDialog] if the location permissions are not granted, otherwise calls
  * [onPermissionGranted].
+ * If a recomposition occurs and the location permissions are still granted then
+ * [onPermissionGranted] will not be called again.
  */
 @Composable
 fun LocationPermissionsHandler(onPermissionGranted: () -> Unit) {
     val context = LocalContext.current
+    var permissionGrantedHandled by rememberSaveable { mutableStateOf(false) }
+
     val locationPermissionState = rememberMultiplePermissionsState(
         listOf(
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -42,7 +50,11 @@ fun LocationPermissionsHandler(onPermissionGranted: () -> Unit) {
                     onRequestPermissionClick = { permissionState.launchPermissionRequest() }
                 )
         }
+        permissionGrantedHandled = false
     } else {
-        onPermissionGranted()
+        if (!permissionGrantedHandled) {
+            onPermissionGranted()
+            permissionGrantedHandled = true
+        }
     }
 }
