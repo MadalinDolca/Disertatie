@@ -72,4 +72,7 @@
     <string name="can_not_add_the_current_location_to_a_non_existent_trail">Can not add the current location to a non existent trail</string>
     <string name="can_not_show_the_trail_point_info_of_a_non_existent_trail">Can not show the trail point info of a non existent trail</string>
     <string name="can_not_update_the_trail_point">Can not update the trail point</string>
+    <string name="clear">Clear</string>
+    <string name="delete">Delete</string>
+    <string name="close">Close</string>
 </resources>

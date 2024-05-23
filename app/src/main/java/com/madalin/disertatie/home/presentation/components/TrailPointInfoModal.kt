@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -69,7 +70,8 @@ fun TrailPointInfoModal(
     onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val coroutineScope = rememberCoroutineScope()
+    var isImageViewerDialogVisible by rememberSaveable { mutableStateOf(false) }
+    var selectedImage: Bitmap? by rememberSaveable { mutableStateOf(null) }
 
     if (isVisible) {
         ModalBottomSheet(
@@ -90,7 +92,11 @@ fun TrailPointInfoModal(
 
                 ImagesRow(
                     images = trailPoint.imagesList,
-                    onNavigateToCameraPreview = { onNavigateToCameraPreview() }
+                    onImageClick = { image ->
+                        selectedImage = image
+                        isImageViewerDialogVisible = true
+                    },
+                    onOpenCamera = { onNavigateToCameraPreview() }
                 )
 
                 OutlinedTextField(
@@ -125,47 +131,45 @@ fun TrailPointInfoModal(
 
                 GeographicalData(trailPoint = trailPoint)
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    FilledTonalButton(onClick = {
-                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) onDismiss()
-                        }
-                    }) {
-                        Text(text = stringResource(R.string.cancel))
-                    }
-                    Button(onClick = {
-                        onUpdateTrailPointClick(
-                            { // success
-                                coroutineScope.launch { sheetState.hide() }
-                                    .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
-                            },
-                            {} // failure
-                        )
-                    }) {
-                        Text(text = stringResource(R.string.save))
-                    }
-                }
+                ButtonsRow(
+                    sheetState = sheetState,
+                    onDismiss = { onDismiss() },
+                    onUpdateSelectedTrailPoint = onUpdateSelectedTrailPoint,
+                    onUpdateTrailPointClick = onUpdateTrailPointClick
+                )
             }
         }
+    }
+
+    if (selectedImage != null) {
+        ImageViewerDialog(
+            isVisible = isImageViewerDialogVisible,
+            image = selectedImage!!,
+            onDelete = {
+                onUpdateSelectedTrailPoint {
+                    val newImagesList = it.imagesList
+                    newImagesList.remove(selectedImage)
+                    it.copy(imagesList = newImagesList)
+                }
+                isImageViewerDialogVisible = false
+            },
+            onDismiss = { isImageViewerDialogVisible = false }
+        )
     }
 }
 
 @Composable
 private fun ImagesRow(
     images: List<Bitmap>,
-    onNavigateToCameraPreview: () -> Unit,
+    onImageClick: (Bitmap) -> Unit,
+    onOpenCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isPermissionDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     if (isPermissionDialogVisible) {
         CameraPermissionHandler(
-            onPermissionGranted = { onNavigateToCameraPreview() },
+            onPermissionGranted = { onOpenCamera() },
             onDismiss = { isPermissionDialogVisible = false }
         )
     }
@@ -190,10 +194,11 @@ private fun ImagesRow(
             }
         }
 
+        // image cards
         images.forEach { image ->
             key(image.allocationByteCount) {
                 Card(
-                    onClick = { },
+                    onClick = { onImageClick(image) },
                     modifier = Modifier.size(75.dp)
                 ) {
                     Image(
@@ -230,7 +235,7 @@ private fun WeatherInfoCard(
 }
 
 @Composable
-fun GeographicalData(
+private fun GeographicalData(
     trailPoint: TrailPoint?,
     modifier: Modifier = Modifier
 ) {
@@ -244,6 +249,66 @@ fun GeographicalData(
             Text(text = stringResource(R.string.altitude) + ": " + trailPoint?.altitude)
             Text(text = stringResource(R.string.timestamp) + ": " + date)
             Text(text = stringResource(R.string.accuracy) + ": " + trailPoint?.accuracy)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ButtonsRow(
+    sheetState: SheetState,
+    onDismiss: () -> Unit,
+    onUpdateSelectedTrailPoint: (update: (TrailPoint) -> TrailPoint) -> Unit,
+    onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        // clear button
+        FilledTonalButton(
+            onClick = {
+                onUpdateSelectedTrailPoint {
+                    it.copy(
+                        imagesList = mutableListOf(),
+                        note = "",
+                        hasWarning = false
+                    )
+                }
+            },
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            )
+        ) {
+            Text(text = stringResource(R.string.clear))
+        }
+
+        // cancel button
+        FilledTonalButton(onClick = {
+            coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
+                if (!sheetState.isVisible) onDismiss()
+            }
+        }) {
+            Text(text = stringResource(R.string.cancel))
+        }
+
+        // save button
+        Button(onClick = {
+            onUpdateTrailPointClick(
+                { // success
+                    coroutineScope.launch { sheetState.hide() }
+                        .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
+                },
+                {} // failure
+            )
+        }) {
+            Text(text = stringResource(R.string.save))
         }
     }
 }

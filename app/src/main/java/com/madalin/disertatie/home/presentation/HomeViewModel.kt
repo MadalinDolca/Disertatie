@@ -431,7 +431,7 @@ class HomeViewModel(
         currentTrail.trailPointsList[selectedTrailPointIndex] = selectedTrailPoint.copy()
         onSuccess()
     }
-
+    
     fun logout() {
         globalDriver.handleAction(GlobalAction.SetUserLoginStatus(false))
     }
