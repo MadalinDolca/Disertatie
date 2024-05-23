@@ -1,6 +1,7 @@
 package com.madalin.disertatie.home.presentation
 
 import android.app.Activity
+import android.graphics.Bitmap
 import android.location.Location
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +66,7 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.home.domain.extensions.toLatLng
+import com.madalin.disertatie.home.domain.model.Trail
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.presentation.components.LocationNotAvailableBanner
 import com.madalin.disertatie.home.presentation.components.TrailPointInfoMarker
@@ -75,7 +78,11 @@ import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
+fun HomeScreen(
+    viewModel: HomeViewModel = koinViewModel(),
+    onNavigateToCameraPreview: () -> Unit,
+    onGetImageResultOnce: () -> Bitmap?
+) {
     MapsInitializer.initialize(LocalContext.current)
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,10 +100,9 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
             }
         }
     )
+    val enableLocationSettingsLambda = remember { { viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest) } }
 
-    LocationPermissionsHandler(onPermissionGranted = {
-        viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest)
-    })
+    LocationPermissionsHandler(onPermissionGranted = enableLocationSettingsLambda)
 
     Scaffold(
         topBar = {
@@ -114,48 +120,43 @@ fun HomeScreen(viewModel: HomeViewModel = koinViewModel()) {
             )
         }
     ) { paddingValues ->
-        Box {
-            MapContainer(
-                cameraPositionState = uiState.cameraPositionState,
-                mapUiSettings = uiState.mapUiSettings,
-                mapProperties = uiState.mapProperties,
-                isLocationAvailable = uiState.isLocationAvailable,
-                isCreatingTrail = uiState.isCreatingTrail,
-                userLocation = uiState.currentUserLocation,
-                trailPointsList = uiState.trailPointsList,
-                onEnableLocationClick = { viewModel.enableLocationSettings(applicationContext, locationSettingResultRequest) },
-                onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
-            )
+        MapContainer(
+            cameraPositionState = uiState.cameraPositionState,
+            mapUiSettings = uiState.mapUiSettings,
+            mapProperties = uiState.mapProperties,
+            isLocationAvailable = uiState.isLocationAvailable,
+            isCreatingTrail = uiState.isCreatingTrail,
+            userLocation = uiState.currentUserLocation,
+            currentTrail = uiState.currentTrail,
+            onEnableLocationClick = enableLocationSettingsLambda,
+            onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
+        )
 
-            MapControls(
-                paddingValues = paddingValues,
-                userLocation = uiState.currentUserLocation,
-                isCreatingTrail = uiState.isCreatingTrail,
-                isUserLocationButtonVisible = viewModel.isUserLocationButtonVisible(),
-                onMoveCameraClick = viewModel::moveCameraToUserLocation,
-                onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
-            )
+        MapControls(
+            paddingValues = paddingValues,
+            userLocation = uiState.currentUserLocation,
+            isCreatingTrail = uiState.isCreatingTrail,
+            isUserLocationButtonVisible = viewModel.isUserLocationButtonVisible(),
+            onMoveCameraClick = viewModel::moveCameraToUserLocation,
+            onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
+        )
 
-            uiState.selectedTrailPoint?.let { selectedTrailPoint ->
-                TrailPointInfoModal(
-                    isVisible = uiState.isTrailPointInfoModalVisible,
-                    sheetState = rememberModalBottomSheetState(
-                        skipPartiallyExpanded = true, // fully expanded
-                        confirmValueChange = { false } // not dismissible when clicked outside of the sheet
-                    ),
-                    trailPoint = selectedTrailPoint,
-                    onDismiss = viewModel::hideTrailPointInfoModal,
-                    onTakePictureClick = {},
-                    onAddWeatherInfoClick = {},
-                    onUpdateTrailPointClick = { imagesList, note, hasWarning ->
-                        viewModel.updateTrailPoint(
-                            imagesList = imagesList,
-                            note = note,
-                            hasWarning = hasWarning
-                        )
-                    }
-                )
-            }
+        uiState.selectedTrailPoint?.let { selectedTrailPoint ->
+            TrailPointInfoModal(
+                isVisible = uiState.isTrailPointInfoModalVisible,
+                sheetState = rememberModalBottomSheetState(
+                    skipPartiallyExpanded = true, // fully expanded
+                    //confirmValueChange = { false } // not dismissible when clicked outside of the sheet
+                ),
+                trailPoint = selectedTrailPoint,
+                //trailPointTempInfo = uiState.selectedTrailPointTempInfo,
+                onDismiss = viewModel::hideTrailPointInfoModal,
+                onNavigateToCameraPreview = { onNavigateToCameraPreview() },
+                onGetImageResultOnce = { onGetImageResultOnce() },
+                onAddWeatherInfoClick = {},
+                onUpdateSelectedTrailPoint = viewModel::updateSelectedTrailPoint,
+                onUpdateTrailPointClick = viewModel::updateTrailPoint
+            )
         }
     }
 }
@@ -168,61 +169,60 @@ private fun MapContainer(
     isLocationAvailable: Boolean,
     isCreatingTrail: Boolean,
     userLocation: Location?,
-    trailPointsList: List<TrailPoint>,
+    currentTrail: Trail?,
     onEnableLocationClick: () -> Unit,
     onShowTrailPointInfoModalClick: (TrailPoint?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier) {
-        GoogleMap(
-            cameraPositionState = cameraPositionState,
-            properties = mapProperties,
-            uiSettings = mapUiSettings
-        ) {
-            if (userLocation != null) {
-                UserMarker(coordinates = userLocation.toLatLng())
-            }
+    GoogleMap(
+        cameraPositionState = cameraPositionState,
+        properties = mapProperties,
+        uiSettings = mapUiSettings
+    ) {
+        val startCapBitmap = bitmapDescriptor(context = LocalContext.current, vectorResId = R.drawable.dot)!!
 
-            // path will not be shown if creation is stopped
-            if (isCreatingTrail) {
-                /* trailPointsList.firstOrNull()?.let {
-                     TrailStartMarker(
-                         coordinates = it.toLatLng(),
-                         trail = null
-                     )
-                 }*/
-
-                // shows the info markers on the map
-                for (trailPoint in trailPointsList) {
-                    if (trailPoint.note.isNotEmpty()
-                        || trailPoint.imagesList.isNotEmpty()
-                        || trailPoint.hasWarning
-                    ) {
-                        TrailPointInfoMarker(
-                            trailPoint = trailPoint,
-                            onClick = { onShowTrailPointInfoModalClick(trailPoint) }
-                        )
-                    }
-                }
-
-                val startCapBitmap = bitmapDescriptor(context = LocalContext.current, vectorResId = R.drawable.dot)!!
-                Polyline(
-                    points = trailPointsList.map { LatLng(it.latitude, it.longitude) },
-                    clickable = true,
-                    color = Color(0xFF0040FF),
-                    startCap = CustomCap(startCapBitmap),
-                    endCap = RoundCap(),
-                    width = 15f,
-                    onClick = { Log.d("MapContainer", "polyline clicked") }
-                )
-            }
+        if (userLocation != null) {
+            UserMarker(coordinates = userLocation.toLatLng())
         }
 
-        LocationNotAvailableBanner(
-            isVisible = !isLocationAvailable,
-            onEnableLocationClick = { onEnableLocationClick() }
-        )
+        // path will not be shown if creation is stopped and the trail doesn't exist
+        if (isCreatingTrail && currentTrail != null) {
+            /* trailPointsList.firstOrNull()?.let {
+                 TrailStartMarker(
+                     coordinates = it.toLatLng(),
+                     trail = null
+                 )
+             }*/
+
+            // shows the info markers on the map
+            for (trailPoint in currentTrail.trailPointsList) {
+                if (trailPoint.note.isNotEmpty()
+                    || trailPoint.imagesList.isNotEmpty()
+                    || trailPoint.hasWarning
+                ) {
+                    TrailPointInfoMarker(
+                        trailPoint = trailPoint,
+                        onClick = { onShowTrailPointInfoModalClick(trailPoint) }
+                    )
+                }
+            }
+
+            Polyline(
+                points = currentTrail.trailPointsList.map { LatLng(it.latitude, it.longitude) },
+                clickable = true,
+                color = Color(0xFF0040FF),
+                startCap = CustomCap(startCapBitmap),
+                endCap = RoundCap(),
+                width = 15f,
+                onClick = { Log.d("MapContainer", "polyline clicked") }
+            )
+        }
     }
+
+    LocationNotAvailableBanner(
+        isVisible = !isLocationAvailable,
+        onEnableLocationClick = { onEnableLocationClick() }
+    )
 }
 
 @Composable
@@ -251,7 +251,7 @@ private fun MapControls(
                 exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start)
             ) {
                 AddTrailInfoButton(
-                    onClick = onShowTrailPointInfoModalClick,
+                    onClick = { onShowTrailPointInfoModalClick() },
                     modifier = Modifier.padding(end = Dimens.container)
                 )
             }
@@ -268,7 +268,7 @@ private fun MapControls(
             ) {
                 UserLocationButton(
                     userLocation = userLocation,
-                    onClick = onMoveCameraClick,
+                    onClick = { onMoveCameraClick() },
                     modifier = Modifier.padding(start = Dimens.container)
                 )
             }
@@ -328,7 +328,7 @@ private fun UserLocationButton(
     modifier: Modifier = Modifier
 ) {
     IconButton(
-        onClick = onClick,
+        onClick = { onClick() },
         modifier = modifier.size(Dimens.iconButtonContainerSize),
         enabled = userLocation != null,
         colors = IconButtonDefaults.filledIconButtonColors(
@@ -356,7 +356,7 @@ private fun AddTrailInfoButton(
     modifier: Modifier = Modifier
 ) {
     IconButton(
-        onClick = onClick,
+        onClick = { onClick() },
         modifier = modifier.size(Dimens.iconButtonContainerSize),
         colors = IconButtonDefaults.filledIconButtonColors()
     ) {
@@ -396,7 +396,7 @@ private fun HomeBottomBar(
 
         NavigationBarItem(
             selected = true,
-            onClick = onLogoutClick,
+            onClick = { onLogoutClick() },
             icon = { Icon(imageVector = Icons.Rounded.AccountCircle, contentDescription = "Discover") },
             label = { Text(text = "Logout") }
         )

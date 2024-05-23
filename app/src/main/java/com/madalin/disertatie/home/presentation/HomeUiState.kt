@@ -13,8 +13,9 @@ data class HomeUiState(
     val isCreatingTrailPaused: Boolean = false,
 
     val currentUserLocation: Location? = null,
-    val trail: Trail? = null,
-    val trailPointsList: MutableList<TrailPoint> = mutableListOf(),
+    val currentTrail: Trail? = null,
+    val userTrails: MutableList<Trail> = mutableListOf(),
+    val remoteTrails: MutableList<Trail> = mutableListOf(),
 
     // trail point info modal bottom sheet
     val selectedTrailPoint: TrailPoint? = null,

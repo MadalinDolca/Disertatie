@@ -6,7 +6,6 @@ import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
@@ -14,6 +13,8 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.actions.GlobalAction
+import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
+import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
@@ -23,6 +24,7 @@ import com.madalin.disertatie.home.domain.LocationClient
 import com.madalin.disertatie.home.domain.LocationState
 import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
 import com.madalin.disertatie.home.domain.extensions.toLatLng
+import com.madalin.disertatie.home.domain.model.Trail
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.domain.requestLocationSettings
 import kotlinx.coroutines.CoroutineScope
@@ -36,9 +38,11 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 
 class HomeViewModel(
     private val globalDriver: GlobalDriver,
+    private val firebaseUserRepository: FirebaseUserRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
@@ -49,6 +53,11 @@ class HomeViewModel(
     companion object {
         private const val MIN_DISTANCE = 3
         private const val ZOOM_LEVEL = 18f
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        locationFetchingScope.cancel()
     }
 
     /**
@@ -97,22 +106,25 @@ class HomeViewModel(
         locationFetchingScope.cancel()
     }
 
+    /**
+     * Uses this [locationData] to update the user location, the trail and camera position if the
+     * conditions are met.
+     */
     private fun handleLocationData(locationData: LocationState.LocationData) {
         val location = locationData.location
         val lastRegisteredLocation = _uiState.value.currentUserLocation
         val isCreatingTrail = _uiState.value.isCreatingTrail
-        val trailPointList = _uiState.value.trailPointsList
 
         // if no trail point has been registered yet
-        // or if the trail creation is started and the list is empty
+        // or if the trail creation is started
         // or if the distance between the last registered location and the new location is longer
         // than the minimum distance, then save the new location
         if (lastRegisteredLocation == null
-            || (trailPointList.isEmpty() && isCreatingTrail)
+            || isCreatingTrail
             || lastRegisteredLocation.distanceTo(location) >= MIN_DISTANCE
         ) {
             updateUserLocation(location)
-            if (isCreatingTrail) updateTrail(location)
+            if (isCreatingTrail) addLocationToCurrentTrail(location)
             if (!isCameraMovedByGestures()) moveCameraToUserLocation() // doesn't move the camera if the camera has been dragged
         }
     }
@@ -151,13 +163,53 @@ class HomeViewModel(
         _uiState.update { it.copy(isLocationAvailable = isAvailable) }
     }
 
+    /**
+     * If the location is available and the user's current location has been obtained, it creates a
+     * new [Trail] with the current user location as the first point of the trail and then updates
+     * the state. Calls [moveCameraToUserLocation] to move the camera to the user location.
+     */
     fun startTrailCreation() {
-        if (!_uiState.value.isLocationAvailable) {
+        val isLocationAvailable = _uiState.value.isLocationAvailable
+        val currentUserLocation = _uiState.value.currentUserLocation
+
+        if (!isLocationAvailable || currentUserLocation == null) {
             showStatusBanner(StatusBannerType.Error, R.string.enable_location)
-        } else {
-            _uiState.update { it.copy(isCreatingTrail = true) }
-            moveCameraToUserLocation()
+            return
         }
+
+        // creates the first trail point out of the current user location
+        val startTrailPoint = TrailPoint(
+            id = generateId(),
+            timestamp = currentUserLocation.time,
+            latitude = currentUserLocation.latitude,
+            longitude = currentUserLocation.longitude,
+            altitude = currentUserLocation.altitude,
+            accuracy = currentUserLocation.accuracy
+        )
+
+        val userId = firebaseUserRepository.getCurrentUserId()
+        if (userId == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_user_id)
+            return
+        }
+
+        // creates a new trail
+        val newTrail = Trail(
+            id = generateId(),
+            userId = userId,
+            startTime = Date(),
+            trailPointsList = mutableListOf(startTrailPoint)
+        )
+
+        // updates the states and moves the camera to the user location
+        _uiState.update {
+            it.copy(
+                isCreatingTrail = true,
+                currentTrail = newTrail
+            )
+        }
+
+        moveCameraToUserLocation()
     }
 
     fun pauseTrailCreation() {
@@ -172,22 +224,33 @@ class HomeViewModel(
         // TODO stop trail creation and save the data
         _uiState.update {
             it.copy(
-                isCreatingTrail = false, trailPointsList = mutableStateListOf()
+                isCreatingTrail = false,
+                currentTrail = null
             )
         }
     }
 
-    private fun updateTrail(location: Location) {
+    /**
+     * Adds the given [location] to the current trail if it exists.
+     */
+    private fun addLocationToCurrentTrail(location: Location) {
+        val currentTrail = _uiState.value.currentTrail
+
+        if (currentTrail == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_add_the_current_location_to_a_non_existent_trail)
+            return
+        }
+
         val newTrailPoint = TrailPoint(
-            timestamp = location.time, latitude = location.latitude, longitude = location.longitude, altitude = location.altitude, accuracy = location.accuracy
+            id = generateId(),
+            timestamp = location.time,
+            latitude = location.latitude,
+            longitude = location.longitude,
+            altitude = location.altitude,
+            accuracy = location.accuracy
         )
 
-        // adds the new location to the list of trail points
-        _uiState.value.trailPointsList.add(newTrailPoint)
-        // TODO update trail points list
-        /*_uiState.update { currentState ->
-            currentState.copy(trailPointsList = currentState.trailPointsList + newTrailPoint)
-        }*/
+        currentTrail.trailPointsList.add(newTrailPoint)
     }
 
     private fun handleUserLocatingException(exception: Throwable) {
@@ -289,23 +352,28 @@ class HomeViewModel(
     }
 
     /**
-     * Shows the trail point info dialog of this [trailPoint] and pauses the trail creation.
-     * If the [trailPoint] is `null`, it shows the last registered trail point.
+     * Shows the trail point info dialog of this [trailPoint] if the current trail exists and pauses
+     * the trail creation. If the [trailPoint] is `null`, it shows the last registered trail point.
      */
     fun showTrailPointInfoModal(trailPoint: TrailPoint? = null) {
-        val trailPointsList = _uiState.value.trailPointsList
-        val selectedPoint = trailPoint ?: trailPointsList.lastOrNull()
+        val currentTrail = _uiState.value.currentTrail
+        if (currentTrail == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_show_the_trail_point_info_of_a_non_existent_trail)
+            return
+        }
 
-        if (selectedPoint != null) {
-            _uiState.update {
-                it.copy(
-                    selectedTrailPoint = selectedPoint,
-                    isTrailPointInfoModalVisible = true,
-                    isCreatingTrailPaused = true
-                )
-            }
-        } else {
+        val selectedPoint = trailPoint ?: currentTrail.trailPointsList.lastOrNull()
+        if (selectedPoint == null) {
             showStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_registered_yet)
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                selectedTrailPoint = selectedPoint.copy(),
+                isTrailPointInfoModalVisible = true,
+                isCreatingTrailPaused = true
+            )
         }
     }
 
@@ -322,15 +390,46 @@ class HomeViewModel(
         }
     }
 
-    fun updateTrailPoint(imagesList: List<String>, note: String, hasWarning: Boolean) {
+    /**
+     * Updates the selected trail point with the result given by the [update] function.
+     */
+    fun updateSelectedTrailPoint(update: (TrailPoint) -> TrailPoint) {
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
-        val selectedTrailPointIndex = _uiState.value.trailPointsList.indexOf(selectedTrailPoint)
-
-        _uiState.value.trailPointsList[selectedTrailPointIndex].apply {
-            this.imagesList.addAll(imagesList)
-            this.note = note
-            this.hasWarning = hasWarning
+        if (selectedTrailPoint == null) {
+            Log.e("HomeViewModel", "updateSelectedTrailPoint: selectedTrailPoint is null")
+            return
         }
+
+        _uiState.update { currentState ->
+            var updatedSelectedPoint = selectedTrailPoint.copy()
+            updatedSelectedPoint = update(updatedSelectedPoint)
+            currentState.copy(selectedTrailPoint = updatedSelectedPoint)
+        }
+    }
+
+    /**
+     * Updates the trail point of the current trail and calls [onSuccess] if the update was
+     * successful, otherwise calls [onFailure].
+     */
+    fun updateTrailPoint(onSuccess: () -> Unit, onFailure: () -> Unit) {
+        val currentTrail = _uiState.value.currentTrail
+        val selectedTrailPoint = _uiState.value.selectedTrailPoint
+
+        if (currentTrail == null || selectedTrailPoint == null) {
+            onFailure()
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_update_the_trail_point)
+            return
+        }
+
+        val selectedTrailPointIndex = currentTrail.trailPointsList.indexOfFirst { it.id == selectedTrailPoint.id }
+        if (selectedTrailPointIndex == -1) {
+            onFailure()
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_update_the_trail_point)
+            return
+        }
+
+        currentTrail.trailPointsList[selectedTrailPointIndex] = selectedTrailPoint.copy()
+        onSuccess()
     }
 
     fun logout() {

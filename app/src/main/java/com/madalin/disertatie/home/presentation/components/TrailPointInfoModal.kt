@@ -1,5 +1,7 @@
 package com.madalin.disertatie.home.presentation.components
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -29,25 +30,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.madalin.disertatie.R
-import com.madalin.disertatie.core.presentation.theme.DisertatieTheme
 import com.madalin.disertatie.core.presentation.util.Dimens
-import com.madalin.disertatie.core.presentation.util.LightDarkPreview
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.presentation.util.CameraPermissionHandler
 import kotlinx.coroutines.launch
@@ -63,20 +62,19 @@ fun TrailPointInfoModal(
     sheetState: SheetState,
     trailPoint: TrailPoint,
     onDismiss: () -> Unit,
-    onTakePictureClick: () -> Unit,
+    onNavigateToCameraPreview: () -> Unit,
+    onGetImageResultOnce: () -> Bitmap?,
     onAddWeatherInfoClick: () -> Unit,
-    onUpdateTrailPointClick: (List<String>, String, Boolean) -> Unit,
+    onUpdateSelectedTrailPoint: (update: (TrailPoint) -> TrailPoint) -> Unit,
+    onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val imagesList by remember { mutableStateOf(trailPoint.imagesList) }
-    var note by remember { mutableStateOf(trailPoint.note) }
-    var hasWarning by remember { mutableStateOf(trailPoint.hasWarning) }
 
     if (isVisible) {
         ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            modifier = modifier.height(LocalConfiguration.current.screenHeightDp.dp),
+            onDismissRequest = { onDismiss() },
+            modifier = modifier,
             sheetState = sheetState,
             windowInsets = BottomSheetDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
         ) {
@@ -86,14 +84,18 @@ fun TrailPointInfoModal(
                     .padding(horizontal = Dimens.container),
                 verticalArrangement = Arrangement.spacedBy(space = Dimens.separator)
             ) {
+                onGetImageResultOnce()?.let { bitmap ->
+                    onUpdateSelectedTrailPoint { it.copy(imagesList = (it.imagesList + bitmap).toMutableList()) }
+                }
+
                 ImagesRow(
-                    onTakePictureClick = onTakePictureClick,
-                    images = trailPoint.imagesList
+                    images = trailPoint.imagesList,
+                    onNavigateToCameraPreview = { onNavigateToCameraPreview() }
                 )
 
                 OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
+                    value = trailPoint.note,
+                    onValueChange = { newValue -> onUpdateSelectedTrailPoint { it.copy(note = newValue) } },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(text = stringResource(R.string.add_notes)) },
                     trailingIcon = {
@@ -106,7 +108,7 @@ fun TrailPointInfoModal(
                 )
 
                 WeatherInfoCard(
-                    onAddWeatherInfoClick = onAddWeatherInfoClick
+                    onAddWeatherInfoClick = { onAddWeatherInfoClick() }
                 )
 
                 Row(
@@ -116,8 +118,8 @@ fun TrailPointInfoModal(
                 ) {
                     Text(text = stringResource(R.string.mark_as_warning))
                     Switch(
-                        checked = hasWarning,
-                        onCheckedChange = { hasWarning = it }
+                        checked = trailPoint.hasWarning,
+                        onCheckedChange = { newValue -> onUpdateSelectedTrailPoint { it.copy(hasWarning = newValue) } }
                     )
                 }
 
@@ -137,10 +139,13 @@ fun TrailPointInfoModal(
                         Text(text = stringResource(R.string.cancel))
                     }
                     Button(onClick = {
-                        onUpdateTrailPointClick(imagesList, note, hasWarning)
-                        coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) onDismiss()
-                        }
+                        onUpdateTrailPointClick(
+                            { // success
+                                coroutineScope.launch { sheetState.hide() }
+                                    .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
+                            },
+                            {} // failure
+                        )
                     }) {
                         Text(text = stringResource(R.string.save))
                     }
@@ -152,38 +157,23 @@ fun TrailPointInfoModal(
 
 @Composable
 private fun ImagesRow(
-    onTakePictureClick: () -> Unit,
-    images: List<String>,
+    images: List<Bitmap>,
+    onNavigateToCameraPreview: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isPermissionDialogVisible by remember { mutableStateOf(false) }
-    var isCameraDialogVisible by remember { mutableStateOf(false) }
+    var isPermissionDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     if (isPermissionDialogVisible) {
-        CameraPermissionHandler(onPermissionGranted = { isCameraDialogVisible = true })
+        CameraPermissionHandler(
+            onPermissionGranted = { onNavigateToCameraPreview() },
+            onDismiss = { isPermissionDialogVisible = false }
+        )
     }
 
-    if (isPermissionDialogVisible) {
-        //onTakePictureClick()
-        CameraDialog(onDismiss = { isPermissionDialogVisible = false })
-    }
-
-    Row(modifier = modifier.horizontalScroll(rememberScrollState())) {
-        for (image in images) {
-            Card(
-                onClick = { },
-                modifier = Modifier.size(75.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.CameraAlt,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(Dimens.container)
-                )
-            }
-        }
-
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(space = Dimens.separator)
+    ) {
         // add image button
         if (images.size < 3) {
             Card(
@@ -197,6 +187,22 @@ private fun ImagesRow(
                         .fillMaxSize()
                         .padding(Dimens.container)
                 )
+            }
+        }
+
+        images.forEach { image ->
+            key(image.allocationByteCount) {
+                Card(
+                    onClick = { },
+                    modifier = Modifier.size(75.dp)
+                ) {
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
         }
     }
@@ -242,7 +248,7 @@ fun GeographicalData(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/*@OptIn(ExperimentalMaterial3Api::class)
 @LightDarkPreview
 @Composable
 private fun TrailPointInfoModalPreview() {
@@ -259,11 +265,12 @@ private fun TrailPointInfoModalPreview() {
                     timestamp = 10L,
                     temperature = 0.0
                 ),
-                onDismiss = { /*TODO*/ },
-                onTakePictureClick = { /*TODO*/ },
-                onAddWeatherInfoClick = { /*TODO*/ },
+                onDismiss = { },
+                onNavigateToCameraPreview = { },
+                onGetImageResultOnce = { null },
+                onAddWeatherInfoClick = { },
                 onUpdateTrailPointClick = { _, _, _ -> }
             )
         }
     }
-}
+}*/

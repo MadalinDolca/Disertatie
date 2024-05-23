@@ -7,16 +7,18 @@ import java.util.Date
 
 @Parcelize
 data class Trail(
-    val name: String,
-    val location: String,
-    val length: Int,
-    val difficulty: Int,
-    val startTime: Date? = null,
-    val endTime: Date? = null,
-    val trailPointsList: List<TrailPoint> = emptyList(),
-    val startingPoint: TrailPoint = trailPointsList.first(),
-    val middlePoint: TrailPoint = trailPointsList[trailPointsList.size / 2],
-    val endingPoint: TrailPoint = trailPointsList.last(),
-    @ServerTimestamp val createdAt: Date? = null,
-    @ServerTimestamp val updatedAt: Date? = null
+    var id: String,
+    var userId: String,
+    var name: String = "",
+    var location: String = "",
+    var length: Int = -1,
+    var difficulty: Int = -1,
+    var startTime: Date? = null,
+    var endTime: Date? = null,
+    var trailPointsList: MutableList<TrailPoint> = mutableListOf(),
+    var startingPoint: TrailPoint? = null,
+    var middlePoint: TrailPoint? = null,
+    var endingPoint: TrailPoint? = null,
+    @ServerTimestamp var createdAt: Date? = null,
+    @ServerTimestamp var updatedAt: Date? = null
 ) : Parcelable

@@ -13,7 +13,7 @@ object Dimens {
     val lottieSize = 250.dp
     val fontSizeRegular = 16.sp
 
-    // icon button
+    // icon buttons
     val iconButtonContainerSize = 55.dp
     val iconButtonContentSize = 30.dp
 }

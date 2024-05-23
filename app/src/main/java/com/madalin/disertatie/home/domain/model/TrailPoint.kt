@@ -1,17 +1,19 @@
 package com.madalin.disertatie.home.domain.model
 
+import android.graphics.Bitmap
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class TrailPoint(
-    val timestamp: Long,
-    val latitude: Double,
-    val longitude: Double,
-    val altitude: Double,
-    val accuracy: Float,
+    var id: String,
+    var timestamp: Long,
+    var latitude: Double,
+    var longitude: Double,
+    var altitude: Double,
+    var accuracy: Float,
     var note: String = "",
-    val imagesList: MutableList<String> = mutableListOf(),
-    val temperature: Double? = null,
+    var imagesList: MutableList<Bitmap> = mutableListOf(),
+    var temperature: Double? = null,
     var hasWarning: Boolean = false
 ) : Parcelable

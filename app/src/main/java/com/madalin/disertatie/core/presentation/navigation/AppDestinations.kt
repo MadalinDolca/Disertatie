@@ -19,3 +19,7 @@ object PasswordReset : AppDestination {
 object Home : AppDestination {
     override val route = "home"
 }
+
+object Camera : AppDestination {
+    override val route = "camera"
+}

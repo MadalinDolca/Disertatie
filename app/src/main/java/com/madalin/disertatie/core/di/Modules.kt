@@ -6,8 +6,8 @@ import com.madalin.disertatie.auth.presentation.login.LoginViewModel
 import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetViewModel
 import com.madalin.disertatie.auth.presentation.register.RegisterViewModel
 import com.madalin.disertatie.core.data.FirebaseUserRepositoryImpl
-import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
+import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
 import com.madalin.disertatie.home.presentation.HomeViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -27,5 +27,5 @@ val viewModelModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
     viewModel { PasswordResetViewModel(get()) }
-    viewModel { HomeViewModel(get()) }
+    viewModel { HomeViewModel(get(), get()) }
 }

@@ -4,9 +4,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogProperties
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.theme.DisertatieTheme
 import com.madalin.disertatie.core.presentation.util.LightDarkPreview
@@ -31,7 +33,7 @@ fun PermissionDialog(
     onOpenAppSettingsClick: () -> Unit,
     onRequestPermissionClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onDismiss: () -> Unit = {}
+    onDismiss: (() -> Unit)? = null
 ) {
     // in case the user accepts the permission then goes to the app settings to deny it
     // and then resumes the app
@@ -48,7 +50,7 @@ fun PermissionDialog(
 
     AlertDialog(
         modifier = modifier,
-        onDismissRequest = onDismiss,
+        onDismissRequest = {},
         title = { Text(text = stringResource(id = R.string.permission_required)) },
         text = { Text(text = permissionTextProvider.getDescription(isPermanentlyDeclined)) },
         confirmButton = {
@@ -61,7 +63,18 @@ fun PermissionDialog(
                     else stringResource(R.string.grant_permission)
                 )
             }
-        }
+        },
+        dismissButton = {
+            if (onDismiss != null) {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.dismiss))
+                }
+            }
+        },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        )
     )
 }
 
