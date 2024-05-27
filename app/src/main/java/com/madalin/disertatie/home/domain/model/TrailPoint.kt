@@ -14,6 +14,6 @@ data class TrailPoint(
     var accuracy: Float,
     var note: String = "",
     var imagesList: MutableList<Bitmap> = mutableListOf(),
-    var temperature: Double? = null,
+    var weather: Weather? = null,
     var hasWarning: Boolean = false
 ) : Parcelable

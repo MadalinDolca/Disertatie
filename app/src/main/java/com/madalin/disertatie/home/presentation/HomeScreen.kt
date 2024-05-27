@@ -149,11 +149,11 @@ fun HomeScreen(
                     //confirmValueChange = { false } // not dismissible when clicked outside of the sheet
                 ),
                 trailPoint = selectedTrailPoint,
-                //trailPointTempInfo = uiState.selectedTrailPointTempInfo,
+                isLoadingWeather = uiState.isLoadingWeather,
                 onDismiss = viewModel::hideTrailPointInfoModal,
                 onNavigateToCameraPreview = { onNavigateToCameraPreview() },
                 onGetImageResultOnce = { onGetImageResultOnce() },
-                onAddWeatherInfoClick = {},
+                onGetSelectedTrailPointWeather = viewModel::updateSelectedTrailPointWeather,
                 onUpdateSelectedTrailPoint = viewModel::updateSelectedTrailPoint,
                 onUpdateTrailPointClick = viewModel::updateTrailPoint
             )
@@ -198,6 +198,7 @@ private fun MapContainer(
             for (trailPoint in currentTrail.trailPointsList) {
                 if (trailPoint.note.isNotEmpty()
                     || trailPoint.imagesList.isNotEmpty()
+                    || trailPoint.weather != null
                     || trailPoint.hasWarning
                 ) {
                     TrailPointInfoMarker(

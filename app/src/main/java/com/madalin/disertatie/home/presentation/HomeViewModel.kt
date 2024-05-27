@@ -26,7 +26,9 @@ import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
 import com.madalin.disertatie.home.domain.extensions.toLatLng
 import com.madalin.disertatie.home.domain.model.Trail
 import com.madalin.disertatie.home.domain.model.TrailPoint
+import com.madalin.disertatie.home.domain.repository.WeatherRepository
 import com.madalin.disertatie.home.domain.requestLocationSettings
+import com.madalin.disertatie.home.domain.state.WeatherResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,7 +45,8 @@ import java.util.Date
 
 class HomeViewModel(
     private val globalDriver: GlobalDriver,
-    private val firebaseUserRepository: FirebaseUserRepository
+    private val firebaseUserRepository: FirebaseUserRepository,
+    private val weatherRepository: WeatherRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState = _uiState.asStateFlow()
@@ -115,12 +119,9 @@ class HomeViewModel(
         val lastRegisteredLocation = _uiState.value.currentUserLocation
         val isCreatingTrail = _uiState.value.isCreatingTrail
 
-        // if no trail point has been registered yet
-        // or if the trail creation is started
-        // or if the distance between the last registered location and the new location is longer
-        // than the minimum distance, then save the new location
+        // if no trail point has been registered yet or if the distance between the last registered
+        // location and the new location is longer than the minimum distance, then save the new location
         if (lastRegisteredLocation == null
-            || isCreatingTrail
             || lastRegisteredLocation.distanceTo(location) >= MIN_DISTANCE
         ) {
             updateUserLocation(location)
@@ -282,10 +283,16 @@ class HomeViewModel(
     }
 
     /**
-     * Shows a [global][GlobalDriver] status banner with this [type] and [text].
+     * Shows a [global][GlobalDriver] status banner with this [type] and [text] message or resource ID.
      */
-    fun showStatusBanner(type: StatusBannerType, text: Int) {
-        globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, UiText.Resource(text))))
+    fun showStatusBanner(type: StatusBannerType, text: Any) {
+        val uiText = when (text) {
+            is String -> UiText.Dynamic(text)
+            is Int -> UiText.Resource(text)
+            else -> UiText.Empty
+        }
+
+        globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, uiText)))
         globalDriver.handleAction(GlobalAction.ShowStatusBanner)
     }
 
@@ -408,6 +415,39 @@ class HomeViewModel(
     }
 
     /**
+     * Obtains the weather information for the selected trail point via [weatherRepository] and
+     * updates it.
+     */
+    fun updateSelectedTrailPointWeather() {
+        val selectedTrailPoint = _uiState.value.selectedTrailPoint
+        if (selectedTrailPoint == null) {
+            Log.e("HomeViewModel", "updateSelectedTrailPointWeather: selectedTrailPoint is null")
+            return
+        }
+
+        weatherRepository
+            .getWeather(selectedTrailPoint.latitude, selectedTrailPoint.longitude, "metric")
+            .map { result ->
+                when (result) {
+                    WeatherResult.Loading -> {
+                        _uiState.update { it.copy(isLoadingWeather = true) }
+                    }
+
+                    is WeatherResult.Success -> {
+                        updateSelectedTrailPoint { it.copy(weather = result.weather) }
+                        _uiState.update { it.copy(isLoadingWeather = false) }
+                    }
+
+                    is WeatherResult.Error -> {
+                        showStatusBanner(StatusBannerType.Error, result.message)
+                        _uiState.update { it.copy(isLoadingWeather = false) }
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /**
      * Updates the trail point of the current trail and calls [onSuccess] if the update was
      * successful, otherwise calls [onFailure].
      */
@@ -431,7 +471,7 @@ class HomeViewModel(
         currentTrail.trailPointsList[selectedTrailPointIndex] = selectedTrailPoint.copy()
         onSuccess()
     }
-    
+
     fun logout() {
         globalDriver.handleAction(GlobalAction.SetUserLoginStatus(false))
     }

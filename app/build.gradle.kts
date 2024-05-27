@@ -1,9 +1,10 @@
 plugins {
-    alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsKotlinAndroid)
-    alias(libs.plugins.googleGmsGoogleServices) // Google services Gradle plugin
-    id("kotlin-parcelize") // Kotlin Parcelize
-    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") // Google Secrets
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.gms.google.services) // Google Services
+    alias(libs.plugins.kotlin.parcelize) // Kotlin Parcelize
+    alias(libs.plugins.kotlin.serialization) // Kotlin Serialization
+    alias(libs.plugins.secrets.gradle.plugin) // Secrets Gradle
 }
 
 android {
@@ -41,6 +42,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -111,6 +113,16 @@ dependencies {
     implementation(libs.camera.video)
     implementation(libs.camera.view)
     implementation(libs.camera.extensions)
+
+    // Kotlin Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+
+    // Coil
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

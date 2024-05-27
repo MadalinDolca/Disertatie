@@ -21,6 +21,9 @@ data class HomeUiState(
     val selectedTrailPoint: TrailPoint? = null,
     val isTrailPointInfoModalVisible: Boolean = false,
 
+    // weather
+    val isLoadingWeather: Boolean = false,
+
     // camera and map
     val cameraPositionState: CameraPositionState = CameraPositionState(),
     val mapProperties: MapProperties = MapProperties(isMyLocationEnabled = false),
