@@ -281,16 +281,15 @@ private fun WeatherInfo(
     Column(modifier = modifier.padding(Dimens.container)) {
         Row(
             modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.Bottom
         ) {
             Column {
-                val icon = "https://openweathermap.org/img/wn/${weather.weatherIcon}@2x.png"
                 SubcomposeAsyncImage(
-                    model = icon,
+                    model = "https://openweathermap.org/img/wn/${weather.weatherIcon}@2x.png",
                     loading = { CircularProgressIndicator() },
-                    error = { Text(text = stringResource(R.string.error)) },
                     contentDescription = "Weather icon",
-                    modifier = Modifier.size(70.dp)
+                    modifier = Modifier.size(50.dp)
                 )
                 Text(
                     text = "${weather.weatherMain}",
@@ -317,7 +316,7 @@ private fun WeatherInfo(
             }
         }
 
-        Spacer(modifier = Modifier.height(Dimens.separator))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),

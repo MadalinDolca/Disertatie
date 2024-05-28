@@ -10,6 +10,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
+import coil.Coil
+import com.google.android.gms.maps.MapsInitializer
+import com.madalin.disertatie.core.domain.util.initUntrustImageLoader
 import com.madalin.disertatie.core.presentation.components.StatusBanner
 import com.madalin.disertatie.core.presentation.navigation.DisertatieNavHost
 import com.madalin.disertatie.core.presentation.navigation.Home
@@ -22,6 +25,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        MapsInitializer.initialize(this)
+        Coil.setImageLoader(initUntrustImageLoader(this))
 
         enableEdgeToEdge()
         installSplashScreen().setKeepOnScreenCondition {

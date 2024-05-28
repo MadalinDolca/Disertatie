@@ -53,7 +53,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.CustomCap
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.RoundCap
@@ -83,8 +82,6 @@ fun HomeScreen(
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?
 ) {
-    MapsInitializer.initialize(LocalContext.current)
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val applicationContext = LocalContext.current.applicationContext
 
@@ -175,6 +172,7 @@ private fun MapContainer(
     modifier: Modifier = Modifier
 ) {
     GoogleMap(
+        modifier = modifier,
         cameraPositionState = cameraPositionState,
         properties = mapProperties,
         uiSettings = mapUiSettings
