@@ -84,4 +84,12 @@
     <string name="unit_latitude_south">° S</string>
     <string name="unit_longitude_east">° E</string>
     <string name="feels_like_x_celsius_degrees">Feels like %s °C</string>
+    <string name="detected">Detected</string>
+    <string name="other_detections">Other detections</string>
+    <string name="beach">Beach</string>
+    <string name="forest">Forest</string>
+    <string name="garden">Garden</string>
+    <string name="lake">Lake</string>
+    <string name="mountain">Mountain</string>
+    <string name="park">Park</string>
 </resources>

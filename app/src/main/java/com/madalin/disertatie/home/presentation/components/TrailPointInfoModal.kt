@@ -55,11 +55,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.home.domain.model.TrailImage
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.domain.model.Weather
 import com.madalin.disertatie.home.presentation.action.SelectedTrailPointAction
@@ -85,7 +87,7 @@ fun TrailPointInfoModal(
     modifier: Modifier = Modifier
 ) {
     var isImageViewerDialogVisible by rememberSaveable { mutableStateOf(false) }
-    var selectedImage: Bitmap? by rememberSaveable { mutableStateOf(null) }
+    var selectedImage: TrailImage? by rememberSaveable { mutableStateOf(null) }
 
     if (isVisible) {
         ModalBottomSheet(
@@ -101,11 +103,11 @@ fun TrailPointInfoModal(
                 verticalArrangement = Arrangement.spacedBy(space = Dimens.separator)
             ) {
                 onGetImageResultOnce()?.let {
-                    onSTPAction(SelectedTrailPointAction.AddImage(it))
+                    onSTPAction(SelectedTrailPointAction.AddImage(LocalContext.current.applicationContext, it))
                 }
 
                 ImagesRow(
-                    images = trailPoint.imagesList,
+                    trailImages = trailPoint.imagesList,
                     onImageClick = { image ->
                         selectedImage = image
                         isImageViewerDialogVisible = true
@@ -161,7 +163,7 @@ fun TrailPointInfoModal(
     if (selectedImage != null) {
         ImageViewerDialog(
             isVisible = isImageViewerDialogVisible,
-            image = selectedImage!!,
+            trailImage = selectedImage!!,
             onDelete = {
                 onSTPAction(SelectedTrailPointAction.RemoveImage(selectedImage!!))
                 isImageViewerDialogVisible = false
@@ -173,8 +175,8 @@ fun TrailPointInfoModal(
 
 @Composable
 private fun ImagesRow(
-    images: List<Bitmap>,
-    onImageClick: (Bitmap) -> Unit,
+    trailImages: List<TrailImage>,
+    onImageClick: (TrailImage) -> Unit,
     onOpenCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -192,7 +194,7 @@ private fun ImagesRow(
         horizontalArrangement = Arrangement.spacedBy(space = Dimens.separator)
     ) {
         // add image button
-        if (images.size < 3) {
+        if (trailImages.size < 3) {
             Card(
                 onClick = { isPermissionDialogVisible = true },
                 modifier = Modifier.size(80.dp)
@@ -208,14 +210,14 @@ private fun ImagesRow(
         }
 
         // image cards
-        images.forEach { image ->
-            key(image.allocationByteCount) {
+        trailImages.forEach { trailImage ->
+            key(trailImage.hashCode()) {
                 Card(
-                    onClick = { onImageClick(image) },
+                    onClick = { onImageClick(trailImage) },
                     modifier = Modifier.size(80.dp)
                 ) {
                     Image(
-                        bitmap = image.asImageBitmap(),
+                        bitmap = trailImage.image.asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

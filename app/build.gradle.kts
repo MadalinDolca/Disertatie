@@ -43,6 +43,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        mlModelBinding = true
     }
 
     composeOptions {
@@ -123,6 +124,10 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+
+    // TensorFlow Lite
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.metadata)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

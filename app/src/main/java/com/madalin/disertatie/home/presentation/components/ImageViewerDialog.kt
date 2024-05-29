@@ -1,14 +1,18 @@
 package com.madalin.disertatie.home.presentation.components
 
 import android.graphics.Bitmap
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,16 +32,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.home.domain.model.TrailImage
+import com.madalin.disertatie.home.presentation.util.getLocationTypeString
 
 @Composable
 fun ImageViewerDialog(
     isVisible: Boolean,
-    image: Bitmap,
+    trailImage: TrailImage,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -47,24 +54,63 @@ fun ImageViewerDialog(
             onDismissRequest = { onDismiss() },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Card(modifier = modifier.padding(Dimens.container)) {
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio((image.width.toFloat() / image.height.toFloat()))
-                ) {
-                    ImageViewer(
-                        image = image,
-                        constraints = this@BoxWithConstraints.constraints,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                    ButtonsRow(
-                        onDelete = { onDelete() },
-                        onDismiss = { onDismiss() },
+            Column(modifier = modifier.padding(Dimens.container)) {
+                ClassificationInfo(trailImage = trailImage)
+
+                Card {
+                    BoxWithConstraints(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = Dimens.separator)
-                    )
+                            .fillMaxWidth()
+                            .aspectRatio((trailImage.image.width.toFloat() / trailImage.image.height.toFloat()))
+                    ) {
+                        ImageViewer(
+                            image = trailImage.image,
+                            constraints = this@BoxWithConstraints.constraints,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                        ButtonsRow(
+                            onDelete = { onDelete() },
+                            onDismiss = { onDismiss() },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = Dimens.separator)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassificationInfo(
+    trailImage: TrailImage,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        onClick = { isExpanded = !isExpanded },
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = Dimens.separator)
+            .animateContentSize()
+    ) {
+        Column(modifier = Modifier.padding(Dimens.container)) {
+            val topResultType = trailImage.classifications?.topResult?.type?.let { getLocationTypeString(it) }
+            Text(text = stringResource(R.string.detected) + ": $topResultType")
+
+            if (isExpanded) {
+                Text(text = stringResource(R.string.accuracy) + ": ${trailImage.classifications?.topResult?.accuracy}")
+
+                Spacer(modifier = Modifier.height(Dimens.separator))
+                Text(
+                    text = stringResource(R.string.other_detections),
+                    fontWeight = FontWeight.Bold
+                )
+
+                trailImage.classifications?.otherResults?.forEach {
+                    Text(text = getLocationTypeString(it.type) + " ${it.accuracy}")
                 }
             }
         }

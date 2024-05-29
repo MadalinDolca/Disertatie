@@ -2,12 +2,13 @@ package com.madalin.disertatie.home.domain.model
 
 import android.os.Parcelable
 import com.google.firebase.firestore.ServerTimestamp
+import com.madalin.disertatie.core.domain.util.generateId
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 
 @Parcelize
 data class Trail(
-    var id: String,
+    var id: String = generateId(),
     var userId: String,
     var name: String = "",
     var location: String = "",

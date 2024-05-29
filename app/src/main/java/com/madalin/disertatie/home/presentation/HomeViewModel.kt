@@ -1,6 +1,7 @@
 package com.madalin.disertatie.home.presentation
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.location.Location
 import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
@@ -20,14 +21,18 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.home.domain.DefaultLocationClient
+import com.madalin.disertatie.home.domain.LocationClassifier
 import com.madalin.disertatie.home.domain.LocationClient
 import com.madalin.disertatie.home.domain.LocationState
 import com.madalin.disertatie.home.domain.extensions.hasSameCoordinates
 import com.madalin.disertatie.home.domain.extensions.toLatLng
+import com.madalin.disertatie.home.domain.model.LocationClassifications
 import com.madalin.disertatie.home.domain.model.Trail
+import com.madalin.disertatie.home.domain.model.TrailImage
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.domain.repository.WeatherRepository
 import com.madalin.disertatie.home.domain.requestLocationSettings
+import com.madalin.disertatie.home.domain.result.LocationClassificationResult
 import com.madalin.disertatie.home.domain.result.WeatherResult
 import com.madalin.disertatie.home.presentation.action.SelectedTrailPointAction
 import kotlinx.coroutines.CoroutineScope
@@ -181,7 +186,6 @@ class HomeViewModel(
 
         // creates the first trail point out of the current user location
         val startTrailPoint = TrailPoint(
-            id = generateId(),
             timestamp = currentUserLocation.time,
             latitude = currentUserLocation.latitude,
             longitude = currentUserLocation.longitude,
@@ -197,7 +201,6 @@ class HomeViewModel(
 
         // creates a new trail
         val newTrail = Trail(
-            id = generateId(),
             userId = userId,
             startTime = Date(),
             trailPointsList = mutableListOf(startTrailPoint)
@@ -400,14 +403,14 @@ class HomeViewModel(
 
     fun handleSelectedTrailPointAction(action: SelectedTrailPointAction) {
         when (action) {
-            is SelectedTrailPointAction.AddImage -> updateSelectedTrailPoint {
-                it.copy(imagesList = (it.imagesList + action.image).toMutableList())
-            }
+            is SelectedTrailPointAction.AddImage -> addAndClassifySTPImage(
+                action.applicationContext, action.image
+            )
 
             is SelectedTrailPointAction.RemoveImage -> {
                 updateSelectedTrailPoint {
                     val newImagesList = it.imagesList
-                    newImagesList.remove(action.image)
+                    newImagesList.remove(action.trailImage)
                     it.copy(imagesList = newImagesList)
                 }
             }
@@ -512,22 +515,44 @@ class HomeViewModel(
         onSuccess()
     }
 
-    fun classifyTrailPointImage(applicationContext: Context) {
-        /*val classifier = LocationClassifier(applicationContext, image)
+    /**
+     * Updates this [trailImage] of the selected trail point with the given [classifications].
+     */
+    private fun updateSTPImageClassifications(trailImage: TrailImage, classifications: LocationClassifications) {
+        val selectedTrailPoint = _uiState.value.selectedTrailPoint
+        if (selectedTrailPoint == null) {
+            Log.e("HomeViewModel", "updateSelectedTrailPointImage: selectedTrailPoint is null")
+            return
+        }
+
+        val newImagesList = selectedTrailPoint.imagesList
+        newImagesList
+            .find { it.id == trailImage.id }
+            ?.let { selectedImage ->
+                selectedImage.classifications = classifications
+                updateSelectedTrailPoint { it.copy(imagesList = newImagesList) }
+            }
+    }
+
+    private fun addAndClassifySTPImage(applicationContext: Context, image: Bitmap) {
+        val classifier = LocationClassifier(applicationContext, image)
+        val newImage = TrailImage(image = image)
+
+        updateSelectedTrailPoint {
+            val newImagesList = (it.imagesList + newImage).toMutableList()
+            it.copy(imagesList = newImagesList)
+        }
 
         classifier
             .classifyImage()
             .map { result ->
                 when (result) {
                     LocationClassificationResult.Loading -> {}
-                    is LocationClassificationResult.Success -> {
-                        _uiState.update { it.copy() }
-                    }
-
+                    is LocationClassificationResult.Success -> updateSTPImageClassifications(newImage, result.data)
                     is LocationClassificationResult.Error -> showStatusBanner(StatusBannerType.Error, result.message)
                 }
             }
-            .launchIn(viewModelScope)*/
+            .launchIn(viewModelScope)
     }
 
     fun logout() {
