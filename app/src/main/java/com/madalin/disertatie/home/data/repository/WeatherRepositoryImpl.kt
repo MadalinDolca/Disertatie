@@ -3,8 +3,8 @@ package com.madalin.disertatie.home.data.repository
 import com.madalin.disertatie.BuildConfig
 import com.madalin.disertatie.home.data.network.WeatherApiService
 import com.madalin.disertatie.home.data.toWeather
-import com.madalin.disertatie.home.domain.state.WeatherResult
 import com.madalin.disertatie.home.domain.repository.WeatherRepository
+import com.madalin.disertatie.home.domain.result.WeatherResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

@@ -1,4 +1,4 @@
-package com.madalin.disertatie.home.domain.state
+package com.madalin.disertatie.home.domain.result
 
 import com.madalin.disertatie.home.domain.model.Weather
 

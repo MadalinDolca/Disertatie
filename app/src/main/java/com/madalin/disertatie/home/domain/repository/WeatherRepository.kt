@@ -1,6 +1,6 @@
 package com.madalin.disertatie.home.domain.repository
 
-import com.madalin.disertatie.home.domain.state.WeatherResult
+import com.madalin.disertatie.home.domain.result.WeatherResult
 import kotlinx.coroutines.flow.Flow
 
 interface WeatherRepository {
