@@ -150,8 +150,7 @@ fun HomeScreen(
                 onDismiss = viewModel::hideTrailPointInfoModal,
                 onNavigateToCameraPreview = { onNavigateToCameraPreview() },
                 onGetImageResultOnce = { onGetImageResultOnce() },
-                onGetSelectedTrailPointWeather = viewModel::updateSelectedTrailPointWeather,
-                onUpdateSelectedTrailPoint = viewModel::updateSelectedTrailPoint,
+                onSTPAction = viewModel::handleSelectedTrailPointAction,
                 onUpdateTrailPointClick = viewModel::updateTrailPoint
             )
         }

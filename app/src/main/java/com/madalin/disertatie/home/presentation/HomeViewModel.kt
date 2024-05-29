@@ -28,7 +28,8 @@ import com.madalin.disertatie.home.domain.model.Trail
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.domain.repository.WeatherRepository
 import com.madalin.disertatie.home.domain.requestLocationSettings
-import com.madalin.disertatie.home.domain.state.WeatherResult
+import com.madalin.disertatie.home.domain.result.WeatherResult
+import com.madalin.disertatie.home.presentation.action.SelectedTrailPointAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -397,10 +398,49 @@ class HomeViewModel(
         }
     }
 
+    fun handleSelectedTrailPointAction(action: SelectedTrailPointAction) {
+        when (action) {
+            is SelectedTrailPointAction.AddImage -> updateSelectedTrailPoint {
+                it.copy(imagesList = (it.imagesList + action.image).toMutableList())
+            }
+
+            is SelectedTrailPointAction.RemoveImage -> {
+                updateSelectedTrailPoint {
+                    val newImagesList = it.imagesList
+                    newImagesList.remove(action.image)
+                    it.copy(imagesList = newImagesList)
+                }
+            }
+
+            is SelectedTrailPointAction.UpdateNote -> updateSelectedTrailPoint {
+                it.copy(note = action.note)
+            }
+
+            SelectedTrailPointAction.GetWeather -> updateSelectedTrailPointWeather()
+
+            SelectedTrailPointAction.DeleteWeather -> updateSelectedTrailPoint {
+                it.copy(weather = null)
+            }
+
+            is SelectedTrailPointAction.UpdateWarningState -> updateSelectedTrailPoint {
+                it.copy(hasWarning = action.hasWarning)
+            }
+
+            SelectedTrailPointAction.ClearData -> updateSelectedTrailPoint {
+                it.copy(
+                    imagesList = mutableListOf(),
+                    note = "",
+                    weather = null,
+                    hasWarning = false
+                )
+            }
+        }
+    }
+
     /**
      * Updates the selected trail point with the result given by the [update] function.
      */
-    fun updateSelectedTrailPoint(update: (TrailPoint) -> TrailPoint) {
+    private fun updateSelectedTrailPoint(update: (TrailPoint) -> TrailPoint) {
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
         if (selectedTrailPoint == null) {
             Log.e("HomeViewModel", "updateSelectedTrailPoint: selectedTrailPoint is null")
@@ -418,7 +458,7 @@ class HomeViewModel(
      * Obtains the weather information for the selected trail point via [weatherRepository] and
      * updates it.
      */
-    fun updateSelectedTrailPointWeather() {
+    private fun updateSelectedTrailPointWeather() {
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
         if (selectedTrailPoint == null) {
             Log.e("HomeViewModel", "updateSelectedTrailPointWeather: selectedTrailPoint is null")
@@ -470,6 +510,24 @@ class HomeViewModel(
 
         currentTrail.trailPointsList[selectedTrailPointIndex] = selectedTrailPoint.copy()
         onSuccess()
+    }
+
+    fun classifyTrailPointImage(applicationContext: Context) {
+        /*val classifier = LocationClassifier(applicationContext, image)
+
+        classifier
+            .classifyImage()
+            .map { result ->
+                when (result) {
+                    LocationClassificationResult.Loading -> {}
+                    is LocationClassificationResult.Success -> {
+                        _uiState.update { it.copy() }
+                    }
+
+                    is LocationClassificationResult.Error -> showStatusBanner(StatusBannerType.Error, result.message)
+                }
+            }
+            .launchIn(viewModelScope)*/
     }
 
     fun logout() {

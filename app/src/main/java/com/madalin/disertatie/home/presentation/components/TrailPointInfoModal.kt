@@ -62,6 +62,7 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.home.domain.model.TrailPoint
 import com.madalin.disertatie.home.domain.model.Weather
+import com.madalin.disertatie.home.presentation.action.SelectedTrailPointAction
 import com.madalin.disertatie.home.presentation.util.CameraPermissionHandler
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -79,8 +80,7 @@ fun TrailPointInfoModal(
     onDismiss: () -> Unit,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
-    onUpdateSelectedTrailPoint: (update: (TrailPoint) -> TrailPoint) -> Unit,
-    onGetSelectedTrailPointWeather: () -> Unit,
+    onSTPAction: (SelectedTrailPointAction) -> Unit,
     onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -100,8 +100,8 @@ fun TrailPointInfoModal(
                     .padding(horizontal = Dimens.container),
                 verticalArrangement = Arrangement.spacedBy(space = Dimens.separator)
             ) {
-                onGetImageResultOnce()?.let { bitmap ->
-                    onUpdateSelectedTrailPoint { it.copy(imagesList = (it.imagesList + bitmap).toMutableList()) }
+                onGetImageResultOnce()?.let {
+                    onSTPAction(SelectedTrailPointAction.AddImage(it))
                 }
 
                 ImagesRow(
@@ -115,7 +115,7 @@ fun TrailPointInfoModal(
 
                 OutlinedTextField(
                     value = trailPoint.note,
-                    onValueChange = { newValue -> onUpdateSelectedTrailPoint { it.copy(note = newValue) } },
+                    onValueChange = { onSTPAction(SelectedTrailPointAction.UpdateNote(it)) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(text = stringResource(R.string.add_notes)) },
                     trailingIcon = {
@@ -130,8 +130,8 @@ fun TrailPointInfoModal(
                 WeatherCard(
                     isLoadingWeather = isLoadingWeather,
                     weather = trailPoint.weather,
-                    onGetWeather = { onGetSelectedTrailPointWeather() },
-                    onDeleteWeather = { onUpdateSelectedTrailPoint { it.copy(weather = null) } }
+                    onGetWeather = { onSTPAction(SelectedTrailPointAction.GetWeather) },
+                    onDeleteWeather = { onSTPAction(SelectedTrailPointAction.DeleteWeather) }
                 )
 
                 Row(
@@ -142,7 +142,7 @@ fun TrailPointInfoModal(
                     Text(text = stringResource(R.string.mark_as_warning))
                     Switch(
                         checked = trailPoint.hasWarning,
-                        onCheckedChange = { newValue -> onUpdateSelectedTrailPoint { it.copy(hasWarning = newValue) } }
+                        onCheckedChange = { onSTPAction(SelectedTrailPointAction.UpdateWarningState(it)) }
                     )
                 }
 
@@ -151,7 +151,7 @@ fun TrailPointInfoModal(
                 ButtonsRow(
                     sheetState = sheetState,
                     onDismiss = { onDismiss() },
-                    onUpdateSelectedTrailPoint = onUpdateSelectedTrailPoint,
+                    onSTPAction = onSTPAction,
                     onUpdateTrailPointClick = onUpdateTrailPointClick
                 )
             }
@@ -163,11 +163,7 @@ fun TrailPointInfoModal(
             isVisible = isImageViewerDialogVisible,
             image = selectedImage!!,
             onDelete = {
-                onUpdateSelectedTrailPoint {
-                    val newImagesList = it.imagesList
-                    newImagesList.remove(selectedImage)
-                    it.copy(imagesList = newImagesList)
-                }
+                onSTPAction(SelectedTrailPointAction.RemoveImage(selectedImage!!))
                 isImageViewerDialogVisible = false
             },
             onDismiss = { isImageViewerDialogVisible = false }
@@ -386,7 +382,7 @@ private fun GeographicalData(
 private fun ButtonsRow(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onUpdateSelectedTrailPoint: (update: (TrailPoint) -> TrailPoint) -> Unit,
+    onSTPAction: (SelectedTrailPointAction) -> Unit,
     onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -400,16 +396,7 @@ private fun ButtonsRow(
     ) {
         // clear button
         FilledTonalButton(
-            onClick = {
-                onUpdateSelectedTrailPoint {
-                    it.copy(
-                        imagesList = mutableListOf(),
-                        note = "",
-                        weather = null,
-                        hasWarning = false
-                    )
-                }
-            },
+            onClick = { onSTPAction(SelectedTrailPointAction.ClearData) },
             colors = ButtonDefaults.filledTonalButtonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer
