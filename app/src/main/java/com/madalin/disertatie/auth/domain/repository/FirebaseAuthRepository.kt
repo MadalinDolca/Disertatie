@@ -5,7 +5,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.madalin.disertatie.auth.domain.failures.LoginFailure
 import com.madalin.disertatie.auth.domain.failures.RegisterFailure
-import com.madalin.disertatie.core.domain.entity.User
+import com.madalin.disertatie.core.domain.model.User
 
 /**
  * Repository interface that contains authentication related methods for [Firebase].

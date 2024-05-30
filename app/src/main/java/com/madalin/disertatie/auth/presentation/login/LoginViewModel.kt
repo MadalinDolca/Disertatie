@@ -7,7 +7,7 @@ import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
 import com.madalin.disertatie.auth.domain.validation.EmailFieldError
 import com.madalin.disertatie.auth.domain.validation.PasswordFieldError
 import com.madalin.disertatie.auth.domain.validation.validateLoginFields
-import com.madalin.disertatie.core.domain.actions.GlobalAction
+import com.madalin.disertatie.core.domain.action.GlobalAction
 import com.madalin.disertatie.core.domain.util.LengthConstraint
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData

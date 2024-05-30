@@ -10,7 +10,7 @@ import com.madalin.disertatie.auth.domain.validation.EmailFieldError
 import com.madalin.disertatie.auth.domain.validation.PasswordFieldError
 import com.madalin.disertatie.auth.domain.validation.validateRegisterFields
 import com.madalin.disertatie.auth.domain.failures.RegisterFailure
-import com.madalin.disertatie.core.domain.entity.User
+import com.madalin.disertatie.core.domain.model.User
 import com.madalin.disertatie.core.domain.util.LengthConstraint
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType

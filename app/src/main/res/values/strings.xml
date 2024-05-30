@@ -92,4 +92,7 @@
     <string name="lake">Lake</string>
     <string name="mountain">Mountain</string>
     <string name="park">Park</string>
+    <string name="discover">Discover</string>
+    <string name="map">Map</string>
+    <string name="profile">Profile</string>
 </resources>

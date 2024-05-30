@@ -11,12 +11,11 @@ import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
 import com.madalin.disertatie.auth.domain.failures.LoginFailure
 import com.madalin.disertatie.auth.domain.failures.RegisterFailure
 import com.madalin.disertatie.core.data.DBCollection
-import com.madalin.disertatie.core.domain.entity.User
+import com.madalin.disertatie.core.domain.model.User
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class FirebaseAuthRepositoryImpl(
     private val externalScope: CoroutineScope = GlobalScope,

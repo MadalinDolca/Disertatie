@@ -38,7 +38,7 @@
             android:value="${WEATHER_API_KEY}" />
 
         <service
-            android:name=".home.domain.LocationService"
+            android:name=".map.domain.LocationService"
             android:foregroundServiceType="location"
             tools:ignore="ForegroundServicePermission" />
 

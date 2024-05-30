@@ -14,9 +14,8 @@ import coil.Coil
 import com.google.android.gms.maps.MapsInitializer
 import com.madalin.disertatie.core.domain.util.initUntrustImageLoader
 import com.madalin.disertatie.core.presentation.components.StatusBanner
-import com.madalin.disertatie.core.presentation.navigation.DisertatieNavHost
-import com.madalin.disertatie.core.presentation.navigation.Home
-import com.madalin.disertatie.core.presentation.navigation.Login
+import com.madalin.disertatie.core.presentation.navigation.MainDestination
+import com.madalin.disertatie.core.presentation.navigation.MainNavHost
 import com.madalin.disertatie.core.presentation.theme.DisertatieTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -51,10 +50,11 @@ fun DisertatieApp(viewModel: MainActivityViewModel) {
     if (!uiState.isSplashScreenVisible) {
         val navController = rememberNavController()
 
-        DisertatieNavHost(
+        MainNavHost(
             navController = navController,
             // automatically navigates to Home if user login state is true
-            startDestination = if (uiState.isUserLoggedIn) Home.route else Login.route
+            startDestination = if (uiState.isUserLoggedIn) MainDestination.Home.route
+            else MainDestination.Login.route
         )
     }
 

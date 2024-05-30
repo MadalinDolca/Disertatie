@@ -2,7 +2,7 @@ package com.madalin.disertatie.core.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.madalin.disertatie.core.domain.actions.GlobalAction
+import com.madalin.disertatie.core.domain.action.GlobalAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

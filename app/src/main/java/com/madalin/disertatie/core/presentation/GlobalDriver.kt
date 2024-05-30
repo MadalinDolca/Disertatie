@@ -2,8 +2,8 @@ package com.madalin.disertatie.core.presentation
 
 import android.util.Log
 import com.madalin.disertatie.R
-import com.madalin.disertatie.core.domain.actions.GlobalAction
-import com.madalin.disertatie.core.domain.failures.UserFailure
+import com.madalin.disertatie.core.domain.action.GlobalAction
+import com.madalin.disertatie.core.domain.failure.UserFailure
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType

@@ -9,9 +9,9 @@ import com.madalin.disertatie.core.data.FirebaseUserRepositoryImpl
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
-import com.madalin.disertatie.home.data.repository.WeatherRepositoryImpl
-import com.madalin.disertatie.home.domain.repository.WeatherRepository
-import com.madalin.disertatie.home.presentation.HomeViewModel
+import com.madalin.disertatie.map.data.repository.WeatherRepositoryImpl
+import com.madalin.disertatie.map.domain.repository.WeatherRepository
+import com.madalin.disertatie.map.presentation.MapViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -30,5 +30,5 @@ val viewModelModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
     viewModel { PasswordResetViewModel(get()) }
-    viewModel { HomeViewModel(get(), get(), get()) }
+    viewModel { MapViewModel(get(), get(), get()) }
 }
