@@ -60,11 +60,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
-import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.model.TrailImage
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.model.Weather
+import com.madalin.disertatie.core.presentation.util.Dimens
+import com.madalin.disertatie.map.presentation.SuggestionDialogState
 import com.madalin.disertatie.map.presentation.action.SelectedTrailPointAction
+import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import com.madalin.disertatie.map.presentation.util.CameraPermissionHandler
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -78,11 +81,14 @@ fun TrailPointInfoModal(
     isVisible: Boolean,
     sheetState: SheetState,
     trailPoint: TrailPoint,
+    suggestionDialogState: SuggestionDialogState,
     isLoadingWeather: Boolean,
+    isActivitySuggestionsDialogVisible: Boolean,
+    isLoadingSuggestion: Boolean,
     onDismiss: () -> Unit,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
-    onSTPAction: (SelectedTrailPointAction) -> Unit,
+    onAction: (Action) -> Unit,
     onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -103,7 +109,7 @@ fun TrailPointInfoModal(
                 verticalArrangement = Arrangement.spacedBy(space = Dimens.separator)
             ) {
                 onGetImageResultOnce()?.let {
-                    onSTPAction(SelectedTrailPointAction.AddImage(LocalContext.current.applicationContext, it))
+                    onAction(SelectedTrailPointAction.AddImage(LocalContext.current.applicationContext, it))
                 }
 
                 ImagesRow(
@@ -117,23 +123,23 @@ fun TrailPointInfoModal(
 
                 OutlinedTextField(
                     value = trailPoint.note,
-                    onValueChange = { onSTPAction(SelectedTrailPointAction.UpdateNote(it)) },
+                    onValueChange = { onAction(SelectedTrailPointAction.UpdateNote(it)) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(text = stringResource(R.string.add_notes)) },
                     trailingIcon = {
-                        IconButton(onClick = { /*TODO*/ }) {
+                        IconButton(onClick = { onAction(SuggestionAction.ShowSuggestionDialog) }) {
                             Icon(imageVector = Icons.Rounded.SmartToy, contentDescription = "Ask AI")
                         }
                     },
-                    maxLines = 3,
+                    maxLines = 5,
                     shape = MaterialTheme.shapes.medium
                 )
 
                 WeatherCard(
                     isLoadingWeather = isLoadingWeather,
                     weather = trailPoint.weather,
-                    onGetWeather = { onSTPAction(SelectedTrailPointAction.GetWeather) },
-                    onDeleteWeather = { onSTPAction(SelectedTrailPointAction.DeleteWeather) }
+                    onGetWeather = { onAction(SelectedTrailPointAction.GetWeather) },
+                    onDeleteWeather = { onAction(SelectedTrailPointAction.DeleteWeather) }
                 )
 
                 Row(
@@ -144,7 +150,7 @@ fun TrailPointInfoModal(
                     Text(text = stringResource(R.string.mark_as_warning))
                     Switch(
                         checked = trailPoint.hasWarning,
-                        onCheckedChange = { onSTPAction(SelectedTrailPointAction.UpdateWarningState(it)) }
+                        onCheckedChange = { onAction(SelectedTrailPointAction.UpdateWarningState(it)) }
                     )
                 }
 
@@ -153,7 +159,7 @@ fun TrailPointInfoModal(
                 ButtonsRow(
                     sheetState = sheetState,
                     onDismiss = { onDismiss() },
-                    onSTPAction = onSTPAction,
+                    onSTPAction = onAction,
                     onUpdateTrailPointClick = onUpdateTrailPointClick
                 )
             }
@@ -165,12 +171,21 @@ fun TrailPointInfoModal(
             isVisible = isImageViewerDialogVisible,
             trailImage = selectedImage!!,
             onDelete = {
-                onSTPAction(SelectedTrailPointAction.RemoveImage(selectedImage!!))
+                onAction(SelectedTrailPointAction.RemoveImage(selectedImage!!))
                 isImageViewerDialogVisible = false
             },
             onDismiss = { isImageViewerDialogVisible = false }
         )
     }
+
+    ActivitySuggestionsDialog(
+        isVisible = isActivitySuggestionsDialogVisible,
+        suggestionDialogState = suggestionDialogState,
+        isSuggestionLoading = isLoadingSuggestion,
+        trailPoint = trailPoint,
+        onDismiss = { onAction(SuggestionAction.HideSuggestionDialog) },
+        onAction = onAction
+    )
 }
 
 @Composable

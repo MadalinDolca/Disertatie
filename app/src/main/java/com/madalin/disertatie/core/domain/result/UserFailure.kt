@@ -1,4 +1,4 @@
-package com.madalin.disertatie.core.domain.failure
+package com.madalin.disertatie.core.domain.result
 
 /**
  * User data fetching failure types.

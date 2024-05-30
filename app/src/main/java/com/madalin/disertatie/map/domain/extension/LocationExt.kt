@@ -20,8 +20,3 @@ fun Location.str() = "$latitude, $longitude"
 infix fun LatLng.hasSameCoordinates(other: LatLng) =
     String.format("%.6f", this.latitude) == String.format("%.6f", other.latitude)
             && String.format("%.6f", this.longitude) == String.format("%.6f", other.longitude)
-
-/**
- * Returns the latitude and longitude of this [TrailPoint] as a [LatLng].
- */
-fun TrailPoint.toLatLng() = LatLng(this.latitude, this.longitude)

@@ -37,6 +37,11 @@
             android:name="com.madalin.disertatie.WEATHER_API_KEY"
             android:value="${WEATHER_API_KEY}" />
 
+        <!-- Gemini API Key -->
+        <meta-data
+            android:name="com.madalin.disertatie.GENERATIVE_LANGUAGE_API_KEY"
+            android:value="${GENERATIVE_LANGUAGE_API_KEY}" />
+
         <service
             android:name=".map.domain.LocationService"
             android:foregroundServiceType="location"

@@ -13,8 +13,15 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.madalin.disertatie.R
+import com.madalin.disertatie.core.domain.SuggestionGenerator
+import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.action.GlobalAction
+import com.madalin.disertatie.core.domain.model.LocationClassifications
+import com.madalin.disertatie.core.domain.model.Trail
+import com.madalin.disertatie.core.domain.model.TrailImage
+import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
+import com.madalin.disertatie.core.domain.result.SuggestionResult
 import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
@@ -23,18 +30,15 @@ import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.map.domain.DefaultLocationClient
 import com.madalin.disertatie.map.domain.LocationClassifier
 import com.madalin.disertatie.map.domain.LocationClient
-import com.madalin.disertatie.map.domain.result.LocationFetchingResult
 import com.madalin.disertatie.map.domain.extension.hasSameCoordinates
 import com.madalin.disertatie.map.domain.extension.toLatLng
-import com.madalin.disertatie.core.domain.model.LocationClassifications
-import com.madalin.disertatie.core.domain.model.Trail
-import com.madalin.disertatie.core.domain.model.TrailImage
-import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.map.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.domain.requestLocationSettings
 import com.madalin.disertatie.map.domain.result.LocationClassificationResult
+import com.madalin.disertatie.map.domain.result.LocationFetchingResult
 import com.madalin.disertatie.map.domain.result.WeatherResult
 import com.madalin.disertatie.map.presentation.action.SelectedTrailPointAction
+import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,7 +56,8 @@ import java.util.Date
 class MapViewModel(
     private val globalDriver: GlobalDriver,
     private val firebaseUserRepository: FirebaseUserRepository,
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    private val suggestionGenerator: SuggestionGenerator
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState = _uiState.asStateFlow()
@@ -68,6 +73,76 @@ class MapViewModel(
     override fun onCleared() {
         super.onCleared()
         locationFetchingScope.cancel()
+    }
+
+    /**
+     * Handles the given [action] by calling the appropriate handle method.
+     */
+    fun handleAction(action: Action) {
+        when (action) {
+            is SelectedTrailPointAction -> handleSelectedTrailPointAction(action)
+            is SuggestionAction -> handleSuggestionAction(action)
+        }
+    }
+
+    /**
+     * Handles the given [SelectedTrailPointAction] by calling the appropriate handle method.
+     */
+    private fun handleSelectedTrailPointAction(action: SelectedTrailPointAction) {
+        when (action) {
+            is SelectedTrailPointAction.AddImage -> addAndClassifySTPImage(
+                action.applicationContext, action.image
+            )
+
+            is SelectedTrailPointAction.RemoveImage -> {
+                updateSelectedTrailPoint {
+                    val newImagesList = it.imagesList
+                    newImagesList.remove(action.trailImage)
+                    it.copy(imagesList = newImagesList)
+                }
+            }
+
+            is SelectedTrailPointAction.UpdateNote -> updateSelectedTrailPoint {
+                it.copy(note = action.note)
+            }
+
+            SelectedTrailPointAction.GetWeather -> updateSelectedTrailPointWeather()
+
+            SelectedTrailPointAction.DeleteWeather -> updateSelectedTrailPoint {
+                it.copy(weather = null)
+            }
+
+            is SelectedTrailPointAction.UpdateWarningState -> updateSelectedTrailPoint {
+                it.copy(hasWarning = action.hasWarning)
+            }
+
+            SelectedTrailPointAction.ClearData -> updateSelectedTrailPoint {
+                it.copy(
+                    imagesList = mutableListOf(),
+                    note = "",
+                    weather = null,
+                    hasWarning = false
+                )
+            }
+        }
+    }
+
+    /**
+     * Handles the given [SuggestionAction] by calling the appropriate handle method.
+     */
+    private fun handleSuggestionAction(action: SuggestionAction) {
+        when (action) {
+            SuggestionAction.GetActivitySuggestions -> getTrailPointActivitySuggestions()
+            is SuggestionAction.SetImageState -> updateSuggestionDialog { it.copy(isImagesChecked = action.isChecked) }
+            is SuggestionAction.SetNoteState -> updateSuggestionDialog { it.copy(isNoteChecked = action.isChecked) }
+            is SuggestionAction.SetWarningState -> updateSuggestionDialog { it.copy(isWarningChecked = action.isChecked) }
+            is SuggestionAction.SetWeatherState -> updateSuggestionDialog { it.copy(isWeatherChecked = action.isChecked) }
+            is SuggestionAction.SetTimeState -> updateSuggestionDialog { it.copy(isTimeChecked = action.isChecked) }
+            is SuggestionAction.SetAdditionalInfo -> updateSuggestionDialog { it.copy(additionalInfo = action.info) }
+            SuggestionAction.CopySuggestion -> copySuggestionToSelectedTrailPoint()
+            SuggestionAction.ShowSuggestionDialog -> showSuggestionDialog()
+            SuggestionAction.HideSuggestionDialog -> hideSuggestionDialog()
+        }
     }
 
     /**
@@ -401,45 +476,6 @@ class MapViewModel(
         }
     }
 
-    fun handleSelectedTrailPointAction(action: SelectedTrailPointAction) {
-        when (action) {
-            is SelectedTrailPointAction.AddImage -> addAndClassifySTPImage(
-                action.applicationContext, action.image
-            )
-
-            is SelectedTrailPointAction.RemoveImage -> {
-                updateSelectedTrailPoint {
-                    val newImagesList = it.imagesList
-                    newImagesList.remove(action.trailImage)
-                    it.copy(imagesList = newImagesList)
-                }
-            }
-
-            is SelectedTrailPointAction.UpdateNote -> updateSelectedTrailPoint {
-                it.copy(note = action.note)
-            }
-
-            SelectedTrailPointAction.GetWeather -> updateSelectedTrailPointWeather()
-
-            SelectedTrailPointAction.DeleteWeather -> updateSelectedTrailPoint {
-                it.copy(weather = null)
-            }
-
-            is SelectedTrailPointAction.UpdateWarningState -> updateSelectedTrailPoint {
-                it.copy(hasWarning = action.hasWarning)
-            }
-
-            SelectedTrailPointAction.ClearData -> updateSelectedTrailPoint {
-                it.copy(
-                    imagesList = mutableListOf(),
-                    note = "",
-                    weather = null,
-                    hasWarning = false
-                )
-            }
-        }
-    }
-
     /**
      * Updates the selected trail point with the result given by the [update] function.
      */
@@ -553,6 +589,114 @@ class MapViewModel(
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    /**
+     * Updates the suggestion dialog state with the result given by the [update] function.
+     */
+    private fun updateSuggestionDialog(update: (SuggestionDialogState) -> SuggestionDialogState) {
+        val suggestionDialogState = _uiState.value.suggestionDialogState
+
+        _uiState.update { currentState ->
+            var updatedState = suggestionDialogState.copy()
+            updatedState = update(updatedState)
+            currentState.copy(suggestionDialogState = updatedState)
+        }
+    }
+
+    /**
+     * Shows the suggestion dialog.
+     */
+    private fun showSuggestionDialog() {
+        _uiState.update { it.copy(isActivitySuggestionsDialogVisible = true) }
+    }
+
+    /**
+     * Hides the suggestion dialog and clears it's state.
+     */
+    private fun hideSuggestionDialog() {
+        _uiState.update { it.copy(isActivitySuggestionsDialogVisible = false) }
+        updateSuggestionDialog { SuggestionDialogState() } // clears the state
+    }
+
+    /**
+     * Copies the generated suggestion into the note of the selected trail point.
+     */
+    private fun copySuggestionToSelectedTrailPoint() {
+        updateSelectedTrailPoint {
+            it.copy(note = it.note + "\n" + _uiState.value.suggestionDialogState.response)
+        }
+    }
+
+    private fun getTrailPointActivitySuggestions() {
+        val selectedTrailPoint = _uiState.value.selectedTrailPoint
+        if (selectedTrailPoint == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_selected_yet)
+            return
+        }
+
+        suggestionGenerator.getActivitySuggestions(
+            buildPrompt(),
+            selectedTrailPoint.extractImages()
+        )
+            .map { result ->
+                when (result) {
+                    SuggestionResult.Loading -> setIsSuggestionLoading(true)
+
+                    is SuggestionResult.Success -> {
+                        updateSuggestionDialog { it.copy(response = result.response) }
+                        setIsSuggestionLoading(false)
+                    }
+
+                    is SuggestionResult.Error -> {
+                        showStatusBanner(StatusBannerType.Error, UiText.Resource(R.string.error))
+                        setIsSuggestionLoading(false)
+                    }
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * Builds and returns a prompt to be used in a suggestion generation based on the settings made
+     * made in the suggestion dialog and the information of the selected trail point.
+     */
+    private fun buildPrompt(): String {
+        val selectedTrailPoint = _uiState.value.selectedTrailPoint
+        val dialogState = _uiState.value.suggestionDialogState
+
+        val imagesText = if (dialogState.isImagesChecked) {
+            "is the place in the attached images, "
+        } else ""
+
+        val temperatureText = if (dialogState.isWeatherChecked) {
+            "the weather is ${selectedTrailPoint?.weather?.weatherDescription}, " +
+                    "with a temperature of ${selectedTrailPoint?.weather?.mainTemperature} Degree Celsius, " +
+                    "and a wind speed of ${selectedTrailPoint?.weather?.windSpeed} m/s, "
+        } else ""
+
+        val trailPointNoteText = if (dialogState.isNoteChecked) {
+            "the user said this about this location '${selectedTrailPoint?.note}', "
+        } else ""
+
+        // TODO convert time to local time zone
+        val timeText = if (dialogState.isTimeChecked) {
+            "the time is ${selectedTrailPoint?.timestamp}, "
+        } else ""
+
+        val warningText = if (dialogState.isWarningChecked) {
+            "it might be a dangerous place, "
+        } else ""
+
+        val additionalInfoText = if (dialogState.additionalInfo.isNotEmpty()) {
+            "and the user also added this additional info '${dialogState.additionalInfo}'"
+        } else ""
+
+        return imagesText + temperatureText + trailPointNoteText + timeText + warningText + additionalInfoText
+    }
+
+    private fun setIsSuggestionLoading(isLoading: Boolean) {
+        _uiState.update { it.copy(isLoadingSuggestion = isLoading) }
     }
 
     fun logout() {

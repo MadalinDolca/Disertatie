@@ -122,11 +122,14 @@ fun MapScreen(
                 //confirmValueChange = { false } // not dismissible when clicked outside of the sheet
             ),
             trailPoint = selectedTrailPoint,
+            suggestionDialogState = uiState.suggestionDialogState,
             isLoadingWeather = uiState.isLoadingWeather,
+            isActivitySuggestionsDialogVisible = uiState.isActivitySuggestionsDialogVisible,
+            isLoadingSuggestion = uiState.isLoadingSuggestion,
             onDismiss = viewModel::hideTrailPointInfoModal,
             onNavigateToCameraPreview = { onNavigateToCameraPreview() },
             onGetImageResultOnce = { onGetImageResultOnce() },
-            onSTPAction = viewModel::handleSelectedTrailPointAction,
+            onAction = viewModel::handleAction,
             onUpdateTrailPointClick = viewModel::updateTrailPoint
         )
     }

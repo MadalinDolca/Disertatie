@@ -1,6 +1,6 @@
 package com.madalin.disertatie.core.presentation
 
-import com.madalin.disertatie.core.domain.failure.UserFailure
+import com.madalin.disertatie.core.domain.result.UserFailure
 import com.madalin.disertatie.core.domain.model.User
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType

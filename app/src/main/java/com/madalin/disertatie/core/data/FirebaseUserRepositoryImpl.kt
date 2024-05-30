@@ -5,7 +5,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.ktx.Firebase
 import com.madalin.disertatie.core.domain.model.User
-import com.madalin.disertatie.core.domain.failure.UserFailure
+import com.madalin.disertatie.core.domain.result.UserFailure
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 
 class FirebaseUserRepositoryImpl : FirebaseUserRepository {

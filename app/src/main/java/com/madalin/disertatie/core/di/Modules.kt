@@ -6,6 +6,7 @@ import com.madalin.disertatie.auth.presentation.login.LoginViewModel
 import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetViewModel
 import com.madalin.disertatie.auth.presentation.register.RegisterViewModel
 import com.madalin.disertatie.core.data.FirebaseUserRepositoryImpl
+import com.madalin.disertatie.core.domain.SuggestionGenerator
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
@@ -23,6 +24,7 @@ val appModule = module {
     single<FirebaseAuthRepository> { FirebaseAuthRepositoryImpl() } // if FirebaseAuthRepository is used as a parameter
     single<FirebaseUserRepository> { FirebaseUserRepositoryImpl() }
     single<WeatherRepository> { WeatherRepositoryImpl() }
+    single { SuggestionGenerator() }
 }
 
 val viewModelModule = module {
@@ -30,5 +32,5 @@ val viewModelModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
     viewModel { PasswordResetViewModel(get()) }
-    viewModel { MapViewModel(get(), get(), get()) }
+    viewModel { MapViewModel(get(), get(), get(), get()) }
 }

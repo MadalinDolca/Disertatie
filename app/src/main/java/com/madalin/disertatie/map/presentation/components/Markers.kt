@@ -19,10 +19,9 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.MarkerState
 import com.madalin.disertatie.R
-import com.madalin.disertatie.core.presentation.util.Dimens
-import com.madalin.disertatie.map.domain.extension.toLatLng
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
+import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.presentation.util.bitmapDescriptor
 
 /**

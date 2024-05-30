@@ -95,4 +95,18 @@
     <string name="discover">Discover</string>
     <string name="map">Map</string>
     <string name="profile">Profile</string>
+    <string name="this_trail_point_has_no_images">This trail point has no images</string>
+    <string name="add_additional_info">Add additional info</string>
+    <string name="ask_ai_for_activity_suggestions">Ask AI for activity suggestions</string>
+    <string name="include_warning">Include warning</string>
+    <string name="include_note">Include note</string>
+    <string name="include_images">Include images</string>
+    <string name="include_weather">Include weather</string>
+    <string name="get_suggestions">Get suggestions</string>
+    <string name="loading">Loading</string>
+    <string name="copy_suggestion">Copy suggestion</string>
+    <string name="ai_suggested_the_following">AI suggested the following</string>
+    <string name="time">Time</string>
+    <string name="include_time">Include time</string>
+    <string name="no_trail_point_has_been_selected_yet">No trail point has been selected yet</string>
 </resources>

@@ -24,6 +24,11 @@ data class MapUiState(
     // weather
     val isLoadingWeather: Boolean = false,
 
+    // suggestion
+    val isActivitySuggestionsDialogVisible: Boolean = false,
+    val isLoadingSuggestion: Boolean = false,
+    val suggestionDialogState: SuggestionDialogState = SuggestionDialogState(),
+
     // camera and map
     val cameraPositionState: CameraPositionState = CameraPositionState(),
     val mapProperties: MapProperties = MapProperties(isMyLocationEnabled = false),

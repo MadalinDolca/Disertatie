@@ -2,7 +2,7 @@ package com.madalin.disertatie.core.domain.repository
 
 import com.google.firebase.ktx.Firebase
 import com.madalin.disertatie.core.domain.model.User
-import com.madalin.disertatie.core.domain.failure.UserFailure
+import com.madalin.disertatie.core.domain.result.UserFailure
 
 interface FirebaseUserRepository {
     /**
