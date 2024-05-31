@@ -111,4 +111,16 @@
     <string name="no_trail_point_has_been_selected_yet">No trail point has been selected yet</string>
     <string name="could_not_make_suggestions">Could not make suggestions</string>
     <string name="horizontal_accuracy_radius">Horizontal accuracy radius</string>
+    <string name="add_info_about_this_trail">Add info about this trail</string>
+    <string name="add_trail_name">Add trail name</string>
+    <string name="add_trail_description">Add trail description</string>
+    <string name="can_not_save_a_non_existent_trail">Can not save a non existent trail</string>
+    <string name="trail_has_been_saved">Trail has been saved</string>
+    <string name="could_not_save_the_trail">Could not save the trail</string>
+    <string name="make_trail_public">Make trail public</string>
+    <string name="dont_save">Don\'t save</string>
+    <string name="trail_name_cannot_be_empty">Trail name cannot be empty</string>
+    <string name="trail_name_should_be_at_least_x_characters_long">Trail name should be at least %d characters long</string>
+    <string name="trail_name_should_be_at_most_x_characters_long">Trail name should be at most %d characters long</string>
+    <string name="uploading_trail">Uploading trail</string>
 </resources>

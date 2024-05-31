@@ -6,14 +6,20 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
+import com.madalin.disertatie.core.presentation.util.UiText
 
 data class MapUiState(
     val isLocationAvailable: Boolean = true,
+
+    // trail creation
+    val currentTrail: Trail? = null,
     val isCreatingTrail: Boolean = false,
     val isCreatingTrailPaused: Boolean = false,
+    val isTrailEndDialogVisible: Boolean = false,
+    val isTrailUploading: Boolean = false,
+    val trailNameError: UiText = UiText.Empty,
 
     val currentUserLocation: Location? = null,
-    val currentTrail: Trail? = null,
     val userTrails: MutableList<Trail> = mutableListOf(),
     val remoteTrails: MutableList<Trail> = mutableListOf(),
 

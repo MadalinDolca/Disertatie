@@ -8,4 +8,11 @@ import com.google.firebase.ktx.Firebase
  */
 object DBCollection {
     const val USERS = "users"
+    const val TRAILS = "trails"
+    const val TRAIL_POINTS_LIST = "trailPointsList"
+    const val IMAGES_LIST = "imagesList"
+}
+
+object StoragePath {
+    const val TRAIL_IMAGES = "trailImages"
 }
