@@ -50,12 +50,15 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Polyline
 import com.madalin.disertatie.R
+import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.model.Trail
-import com.madalin.disertatie.core.domain.model.TrailPoint
-import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.domain.extension.toLatLng
+import com.madalin.disertatie.map.presentation.action.LocationAction
+import com.madalin.disertatie.map.presentation.action.MapAction
+import com.madalin.disertatie.map.presentation.action.TrailAction
 import com.madalin.disertatie.map.presentation.components.LocationNotAvailableBanner
+import com.madalin.disertatie.map.presentation.components.TrailEndDialog
 import com.madalin.disertatie.map.presentation.components.TrailPointInfoMarker
 import com.madalin.disertatie.map.presentation.components.TrailPointInfoModal
 import com.madalin.disertatie.map.presentation.components.UserMarker
@@ -78,11 +81,9 @@ fun MapScreen(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
         onResult = { activityResult ->
             if (activityResult.resultCode == Activity.RESULT_OK) {
-                viewModel.showStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled)
-                viewModel.setLocationAvailability(true)
-                viewModel.startLocationFetching(applicationContext)
+                viewModel.handleAction(LocationAction.SettingResultEnabled(applicationContext))
             } else {
-                viewModel.setLocationAvailability(false)
+                viewModel.handleAction(LocationAction.SettingResultDisabled)
             }
         }
     )
@@ -98,8 +99,8 @@ fun MapScreen(
         isCreatingTrail = uiState.isCreatingTrail,
         userLocation = uiState.currentUserLocation,
         currentTrail = uiState.currentTrail,
-        onEnableLocationClick = enableLocationSettingsLambda,
-        onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
+        onAction = viewModel::handleAction,
+        onEnableLocationClick = enableLocationSettingsLambda
     )
 
     MapControls(
@@ -108,10 +109,7 @@ fun MapScreen(
         isLocationAvailable = uiState.isLocationAvailable,
         isCreatingTrail = uiState.isCreatingTrail,
         isUserLocationButtonVisible = viewModel.isUserLocationButtonVisible(),
-        startTrailCreation = viewModel::startTrailCreation,
-        stopTrailCreation = viewModel::stopTrailCreation,
-        onMoveCameraClick = viewModel::moveCameraToUserLocation,
-        onShowTrailPointInfoModalClick = viewModel::showTrailPointInfoModal
+        onAction = viewModel::handleAction
     )
 
     uiState.selectedTrailPoint?.let { selectedTrailPoint ->
@@ -126,11 +124,19 @@ fun MapScreen(
             isLoadingWeather = uiState.isLoadingWeather,
             isActivitySuggestionsDialogVisible = uiState.isActivitySuggestionsDialogVisible,
             isLoadingSuggestion = uiState.isLoadingSuggestion,
-            onDismiss = viewModel::hideTrailPointInfoModal,
-            onNavigateToCameraPreview = { onNavigateToCameraPreview() },
-            onGetImageResultOnce = { onGetImageResultOnce() },
             onAction = viewModel::handleAction,
-            onUpdateTrailPointClick = viewModel::updateTrailPoint
+            onNavigateToCameraPreview = { onNavigateToCameraPreview() },
+            onGetImageResultOnce = { onGetImageResultOnce() }
+        )
+    }
+
+    uiState.currentTrail?.let {
+        TrailEndDialog(
+            isVisible = uiState.isTrailEndDialogVisible,
+            isUploading = uiState.isTrailUploading,
+            trail = it,
+            trailNameError = uiState.trailNameError,
+            onAction = viewModel::handleAction
         )
     }
 }
@@ -144,8 +150,8 @@ private fun MapContainer(
     isCreatingTrail: Boolean,
     userLocation: Location?,
     currentTrail: Trail?,
+    onAction: (Action) -> Unit,
     onEnableLocationClick: () -> Unit,
-    onShowTrailPointInfoModalClick: (TrailPoint?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     GoogleMap(
@@ -178,7 +184,7 @@ private fun MapContainer(
                 ) {
                     TrailPointInfoMarker(
                         trailPoint = trailPoint,
-                        onClick = { onShowTrailPointInfoModalClick(trailPoint) }
+                        onClick = { onAction(TrailAction.ShowTrailPointInfoModal(trailPoint)) }
                     )
                 }
             }
@@ -208,10 +214,7 @@ private fun MapControls(
     isLocationAvailable: Boolean,
     isCreatingTrail: Boolean,
     isUserLocationButtonVisible: Boolean,
-    startTrailCreation: () -> Unit,
-    stopTrailCreation: () -> Unit,
-    onMoveCameraClick: () -> Unit,
-    onShowTrailPointInfoModalClick: () -> Unit,
+    onAction: (Action) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -222,8 +225,8 @@ private fun MapControls(
         CreateTrailFAB(
             isLocationAvailable = isLocationAvailable,
             isCreatingTrail = isCreatingTrail,
-            onStartTrailCreationClick = { startTrailCreation() },
-            onStopTrailCreationClick = { stopTrailCreation() },
+            onStartTrailCreationClick = { onAction(TrailAction.StartTrailCreation) },
+            onStopTrailCreationClick = { onAction(TrailAction.StopTrailCreation) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = Dimens.container)
@@ -240,7 +243,7 @@ private fun MapControls(
                 exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start)
             ) {
                 AddTrailInfoButton(
-                    onClick = { onShowTrailPointInfoModalClick() },
+                    onClick = { onAction(TrailAction.ShowTrailPointInfoModal()) },
                     modifier = Modifier.padding(end = Dimens.container)
                 )
             }
@@ -257,7 +260,7 @@ private fun MapControls(
             ) {
                 UserLocationButton(
                     userLocation = userLocation,
-                    onClick = { onMoveCameraClick() },
+                    onClick = { onAction(MapAction.MoveCameraToUserLocation) },
                     modifier = Modifier.padding(start = Dimens.container)
                 )
             }

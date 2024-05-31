@@ -67,8 +67,8 @@ import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.model.Weather
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.presentation.SuggestionDialogState
-import com.madalin.disertatie.map.presentation.action.SelectedTrailPointAction
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
+import com.madalin.disertatie.map.presentation.action.TrailAction
 import com.madalin.disertatie.map.presentation.util.CameraPermissionHandler
 import kotlinx.coroutines.launch
 
@@ -85,11 +85,9 @@ fun TrailPointInfoModal(
     isLoadingWeather: Boolean,
     isActivitySuggestionsDialogVisible: Boolean,
     isLoadingSuggestion: Boolean,
-    onDismiss: () -> Unit,
+    onAction: (Action) -> Unit,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
-    onAction: (Action) -> Unit,
-    onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isImageViewerDialogVisible by rememberSaveable { mutableStateOf(false) }
@@ -97,7 +95,7 @@ fun TrailPointInfoModal(
 
     if (isVisible) {
         ModalBottomSheet(
-            onDismissRequest = { onDismiss() },
+            onDismissRequest = { onAction(TrailAction.HideTrailPointInfoModal) },
             modifier = modifier,
             sheetState = sheetState,
             windowInsets = BottomSheetDefaults.windowInsets.only(WindowInsetsSides.Horizontal)
@@ -109,7 +107,7 @@ fun TrailPointInfoModal(
                 verticalArrangement = Arrangement.spacedBy(space = Dimens.separator)
             ) {
                 onGetImageResultOnce()?.let {
-                    onAction(SelectedTrailPointAction.AddImage(LocalContext.current.applicationContext, it))
+                    onAction(TrailAction.AddStpImage(LocalContext.current.applicationContext, it))
                 }
 
                 ImagesRow(
@@ -123,7 +121,7 @@ fun TrailPointInfoModal(
 
                 OutlinedTextField(
                     value = trailPoint.note,
-                    onValueChange = { onAction(SelectedTrailPointAction.UpdateNote(it)) },
+                    onValueChange = { onAction(TrailAction.UpdateStpNote(it)) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(text = stringResource(R.string.add_notes)) },
                     trailingIcon = {
@@ -138,8 +136,8 @@ fun TrailPointInfoModal(
                 WeatherCard(
                     isLoadingWeather = isLoadingWeather,
                     weather = trailPoint.weather,
-                    onGetWeather = { onAction(SelectedTrailPointAction.GetWeather) },
-                    onDeleteWeather = { onAction(SelectedTrailPointAction.DeleteWeather) }
+                    onGetWeather = { onAction(TrailAction.GetStpWeather) },
+                    onDeleteWeather = { onAction(TrailAction.DeleteStpWeather) }
                 )
 
                 Row(
@@ -150,7 +148,7 @@ fun TrailPointInfoModal(
                     Text(text = stringResource(R.string.mark_as_warning))
                     Switch(
                         checked = trailPoint.hasWarning,
-                        onCheckedChange = { onAction(SelectedTrailPointAction.UpdateWarningState(it)) }
+                        onCheckedChange = { onAction(TrailAction.UpdateStpWarningState(it)) }
                     )
                 }
 
@@ -158,9 +156,7 @@ fun TrailPointInfoModal(
 
                 ButtonsRow(
                     sheetState = sheetState,
-                    onDismiss = { onDismiss() },
-                    onSTPAction = onAction,
-                    onUpdateTrailPointClick = onUpdateTrailPointClick
+                    onAction = onAction,
                 )
             }
         }
@@ -171,7 +167,7 @@ fun TrailPointInfoModal(
             isVisible = isImageViewerDialogVisible,
             trailImage = selectedImage!!,
             onDelete = {
-                onAction(SelectedTrailPointAction.RemoveImage(selectedImage!!))
+                onAction(TrailAction.RemoveStpImage(selectedImage!!))
                 isImageViewerDialogVisible = false
             },
             onDismiss = { isImageViewerDialogVisible = false }
@@ -396,9 +392,7 @@ private fun GeographicalData(
 @Composable
 private fun ButtonsRow(
     sheetState: SheetState,
-    onDismiss: () -> Unit,
-    onSTPAction: (SelectedTrailPointAction) -> Unit,
-    onUpdateTrailPointClick: (onSuccess: () -> Unit, onFailure: () -> Unit) -> Unit,
+    onAction: (Action) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -411,7 +405,7 @@ private fun ButtonsRow(
     ) {
         // clear button
         FilledTonalButton(
-            onClick = { onSTPAction(SelectedTrailPointAction.ClearData) },
+            onClick = { onAction(TrailAction.ClearStpData) },
             colors = ButtonDefaults.filledTonalButtonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer
@@ -423,7 +417,7 @@ private fun ButtonsRow(
         // cancel button
         FilledTonalButton(onClick = {
             coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                if (!sheetState.isVisible) onDismiss()
+                if (!sheetState.isVisible) onAction(TrailAction.HideTrailPointInfoModal)
             }
         }) {
             Text(text = stringResource(R.string.cancel))
@@ -431,13 +425,13 @@ private fun ButtonsRow(
 
         // save button
         Button(onClick = {
-            onUpdateTrailPointClick(
+            onAction(TrailAction.UpdateTrailPoint(
                 { // success
                     coroutineScope.launch { sheetState.hide() }
-                        .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
+                        .invokeOnCompletion { if (!sheetState.isVisible) onAction(TrailAction.HideTrailPointInfoModal) }
                 },
                 {} // failure
-            )
+            ))
         }) {
             Text(text = stringResource(R.string.save))
         }

@@ -21,9 +21,11 @@ import com.madalin.disertatie.core.domain.model.LocationClassifications
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailImage
 import com.madalin.disertatie.core.domain.model.TrailPoint
+import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.domain.result.SuggestionResult
 import com.madalin.disertatie.core.domain.util.generateId
+import com.madalin.disertatie.core.domain.validation.TrailValidator
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
@@ -38,8 +40,10 @@ import com.madalin.disertatie.map.domain.requestLocationSettings
 import com.madalin.disertatie.map.domain.result.LocationClassificationResult
 import com.madalin.disertatie.map.domain.result.LocationFetchingResult
 import com.madalin.disertatie.map.domain.result.WeatherResult
-import com.madalin.disertatie.map.presentation.action.SelectedTrailPointAction
+import com.madalin.disertatie.map.presentation.action.LocationAction
+import com.madalin.disertatie.map.presentation.action.MapAction
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
+import com.madalin.disertatie.map.presentation.action.TrailAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -57,6 +61,7 @@ import java.util.Date
 class MapViewModel(
     private val globalDriver: GlobalDriver,
     private val firebaseUserRepository: FirebaseUserRepository,
+    private val firebaseContentRepository: FirebaseContentRepository,
     private val weatherRepository: WeatherRepository,
     private val suggestionGenerator: SuggestionGenerator
 ) : ViewModel() {
@@ -81,21 +86,56 @@ class MapViewModel(
      */
     fun handleAction(action: Action) {
         when (action) {
-            is SelectedTrailPointAction -> handleSelectedTrailPointAction(action)
+            is MapAction -> handleMapAction(action)
+            is LocationAction -> handleLocationAction(action)
+            is TrailAction -> handleTrailAction(action)
             is SuggestionAction -> handleSuggestionAction(action)
         }
     }
 
     /**
-     * Handles the given [SelectedTrailPointAction] by calling the appropriate handle method.
+     * Handles the given [MapAction] by calling the appropriate handle method.
      */
-    private fun handleSelectedTrailPointAction(action: SelectedTrailPointAction) {
+    private fun handleMapAction(action: MapAction) {
         when (action) {
-            is SelectedTrailPointAction.AddImage -> addAndClassifySTPImage(
-                action.applicationContext, action.image
-            )
+            MapAction.MoveCameraToUserLocation -> moveCameraToUserLocation()
+        }
+    }
 
-            is SelectedTrailPointAction.RemoveImage -> {
+    /**
+     * Handles the given [LocationAction] by calling the appropriate handle method.
+     */
+    private fun handleLocationAction(action: LocationAction) {
+        when (action) {
+            is LocationAction.SettingResultEnabled -> {
+                showStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled)
+                setLocationAvailability(true)
+                startLocationFetching(action.context)
+            }
+
+            LocationAction.SettingResultDisabled -> setLocationAvailability(false)
+        }
+    }
+
+    /**
+     * Handles the given [TrailAction] by calling the appropriate handle method.
+     */
+    private fun handleTrailAction(action: TrailAction) {
+        when (action) {
+            TrailAction.StartTrailCreation -> startTrailCreation()
+            TrailAction.StopTrailCreation -> stopTrailCreation()
+            is TrailAction.UpdateTrailName -> updateTrail { it.copy(name = action.name) }
+            is TrailAction.UpdateTrailDescription -> updateTrail { it.copy(description = action.description) }
+            is TrailAction.SetTrailVisibility -> updateTrail { it.copy(isVisible = action.isVisible) }
+            TrailAction.SaveTrail -> saveTrail()
+            TrailAction.DontSaveTrail -> dontSaveTrail()
+
+            is TrailAction.ShowTrailPointInfoModal -> showTrailPointInfoModal(action.trailPoint)
+            TrailAction.HideTrailPointInfoModal -> hideTrailPointInfoModal()
+            is TrailAction.UpdateTrailPoint -> updateTrailPoint(action.onSuccess, action.onFailure)
+            is TrailAction.AddStpImage -> addAndClassifySTPImage(action.applicationContext, action.image)
+
+            is TrailAction.RemoveStpImage -> {
                 updateSelectedTrailPoint {
                     val newImagesList = it.imagesList
                     newImagesList.remove(action.trailImage)
@@ -103,21 +143,12 @@ class MapViewModel(
                 }
             }
 
-            is SelectedTrailPointAction.UpdateNote -> updateSelectedTrailPoint {
-                it.copy(note = action.note)
-            }
+            is TrailAction.UpdateStpNote -> updateSelectedTrailPoint { it.copy(note = action.note) }
+            TrailAction.GetStpWeather -> updateSelectedTrailPointWeather()
+            TrailAction.DeleteStpWeather -> updateSelectedTrailPoint { it.copy(weather = null) }
+            is TrailAction.UpdateStpWarningState -> updateSelectedTrailPoint { it.copy(hasWarning = action.hasWarning) }
 
-            SelectedTrailPointAction.GetWeather -> updateSelectedTrailPointWeather()
-
-            SelectedTrailPointAction.DeleteWeather -> updateSelectedTrailPoint {
-                it.copy(weather = null)
-            }
-
-            is SelectedTrailPointAction.UpdateWarningState -> updateSelectedTrailPoint {
-                it.copy(hasWarning = action.hasWarning)
-            }
-
-            SelectedTrailPointAction.ClearData -> updateSelectedTrailPoint {
+            TrailAction.ClearStpData -> updateSelectedTrailPoint {
                 it.copy(
                     imagesList = mutableListOf(),
                     note = "",
@@ -168,7 +199,7 @@ class MapViewModel(
      * It prevents the [LocationClient] from spawning multiple flows if is already getting updates.
      * It handles each [LocationFetchingResult] collection and thrown exceptions.
      */
-    fun startLocationFetching(applicationContext: Context) {
+    private fun startLocationFetching(applicationContext: Context) {
         if (::locationClient.isInitialized && locationClient.isGettingLocationUpdates) return
 
         locationFetchingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -242,7 +273,7 @@ class MapViewModel(
     /**
      * Sets the location availability state to [isAvailable].
      */
-    fun setLocationAvailability(isAvailable: Boolean) {
+    private fun setLocationAvailability(isAvailable: Boolean) {
         _uiState.update { it.copy(isLocationAvailable = isAvailable) }
     }
 
@@ -251,7 +282,7 @@ class MapViewModel(
      * new [Trail] with the current user location as the first point of the trail and then updates
      * the state. Calls [moveCameraToUserLocation] to move the camera to the user location.
      */
-    fun startTrailCreation() {
+    private fun startTrailCreation() {
         val isLocationAvailable = _uiState.value.isLocationAvailable
         val currentUserLocation = _uiState.value.currentUserLocation
 
@@ -293,19 +324,93 @@ class MapViewModel(
         moveCameraToUserLocation()
     }
 
-    fun pauseTrailCreation() {
-        _uiState.update { it.copy(isCreatingTrailPaused = true) }
-    }
-
-    fun resumeTrailCreation() {
-        _uiState.update { it.copy(isCreatingTrailPaused = false) }
-    }
-
-    fun stopTrailCreation() {
-        // TODO stop trail creation and save the data
+    /**
+     * Stops the trail creation and shows the end dialog.
+     */
+    private fun stopTrailCreation() {
         _uiState.update {
             it.copy(
                 isCreatingTrail = false,
+                isTrailEndDialogVisible = true
+            )
+        }
+    }
+
+    /**
+     * Updates the current trail with the result given by the [update] function.
+     */
+    private fun updateTrail(update: (Trail) -> Trail) {
+        val currentTrail = _uiState.value.currentTrail
+        if (currentTrail == null) {
+            Log.e("MapViewModel", "updateTrail: currentTrail is null")
+            return
+        }
+
+        _uiState.update { it.copy(currentTrail = update(currentTrail)) }
+    }
+
+    /**
+     * Validates the given trail [name]. If not valid it updates the trail name error state.
+     * @return `true` if valid, `false` otherwise.
+     */
+    private fun validateTrailName(name: String): Boolean {
+        val nameResult = TrailValidator.validateName(name)
+
+        _uiState.update {
+            it.copy(
+                trailNameError = when (nameResult) {
+                    TrailValidator.NameResult.NotProvided -> UiText.Resource(R.string.trail_name_cannot_be_empty)
+                    TrailValidator.NameResult.TooLong -> UiText.Resource(R.string.trail_name_should_be_at_most_x_characters_long, TrailValidator.MAX_TRAIL_NAME_LENGTH)
+                    TrailValidator.NameResult.TooShort -> UiText.Resource(R.string.trail_name_should_be_at_least_x_characters_long, TrailValidator.MIN_TRAIL_NAME_LENGTH)
+                    TrailValidator.NameResult.Valid -> UiText.Empty
+                }
+            )
+        }
+
+        return nameResult == TrailValidator.NameResult.Valid
+    }
+
+    /**
+     * Saves the current trail into the database and its images to cloud storage and hides the dialog.
+     */
+    private fun saveTrail() {
+        val currentTrail = _uiState.value.currentTrail
+        if (currentTrail == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_save_a_non_existent_trail)
+            return
+        }
+        if (!validateTrailName(currentTrail.name)) return
+
+        _uiState.update { it.copy(isTrailUploading = true) } // uploading has started
+
+        firebaseContentRepository.saveTrailAndStoreImages(
+            currentTrail, currentTrail.extractTrailImages(),
+            onSuccess = {
+                _uiState.update {
+                    it.copy(
+                        isTrailEndDialogVisible = false,
+                        isTrailUploading = false,
+                        currentTrail = null
+                    )
+                }
+                showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_saved)
+            },
+            onFailure = { message ->
+                if (message == null) showStatusBanner(StatusBannerType.Error, R.string.could_not_save_the_trail)
+                else showStatusBanner(StatusBannerType.Error, message)
+
+                _uiState.update { it.copy(isTrailUploading = false) }
+            }
+        )
+    }
+
+    /**
+     * Clears the collected trail data and hides the dialog.
+     */
+    private fun dontSaveTrail() {
+        _uiState.update {
+            it.copy(
+                isTrailEndDialogVisible = false,
                 currentTrail = null
             )
         }
@@ -365,7 +470,7 @@ class MapViewModel(
     /**
      * Shows a [global][GlobalDriver] status banner with this [type] and [text] message or resource ID.
      */
-    fun showStatusBanner(type: StatusBannerType, text: Any) {
+    private fun showStatusBanner(type: StatusBannerType, text: Any) {
         val uiText = when (text) {
             is String -> UiText.Dynamic(text)
             is Int -> UiText.Resource(text)
@@ -383,7 +488,7 @@ class MapViewModel(
     /**
      * Sets the camera dragged state to `false` and moves the camera to the user location.
      */
-    fun moveCameraToUserLocation() {
+    private fun moveCameraToUserLocation() {
         _uiState.value.currentUserLocation?.let { userLocation ->
             // updates the camera position on the main thread
             viewModelScope.launch { //Handler(Looper.getMainLooper()).post {}
@@ -442,7 +547,7 @@ class MapViewModel(
      * Shows the trail point info dialog of this [trailPoint] if the current trail exists and pauses
      * the trail creation. If the [trailPoint] is `null`, it shows the last registered trail point.
      */
-    fun showTrailPointInfoModal(trailPoint: TrailPoint? = null) {
+    private fun showTrailPointInfoModal(trailPoint: TrailPoint? = null) {
         val currentTrail = _uiState.value.currentTrail
         if (currentTrail == null) {
             showStatusBanner(StatusBannerType.Error, R.string.can_not_show_the_trail_point_info_of_a_non_existent_trail)
@@ -467,7 +572,7 @@ class MapViewModel(
     /**
      * Hides the trail point info modal and resumes the trail creation.
      */
-    fun hideTrailPointInfoModal() {
+    private fun hideTrailPointInfoModal() {
         _uiState.update {
             it.copy(
                 selectedTrailPoint = null,
@@ -531,7 +636,7 @@ class MapViewModel(
      * Updates the trail point of the current trail and calls [onSuccess] if the update was
      * successful, otherwise calls [onFailure].
      */
-    fun updateTrailPoint(onSuccess: () -> Unit, onFailure: () -> Unit) {
+    private fun updateTrailPoint(onSuccess: () -> Unit, onFailure: () -> Unit) {
         val currentTrail = _uiState.value.currentTrail
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
 
@@ -643,7 +748,7 @@ class MapViewModel(
         } else {
             emptyList()
         }
-        Log.d("xxxxxxxxxxxxxx", buildPrompt())
+
         suggestionGenerator.getActivitySuggestionsForLocation(
             buildPrompt(),
             trailPointImages
@@ -658,7 +763,7 @@ class MapViewModel(
                     }
 
                     is SuggestionResult.Error -> {
-                        showStatusBanner(StatusBannerType.Error, UiText.Resource(R.string.could_not_make_suggestions))
+                        showStatusBanner(StatusBannerType.Error, R.string.could_not_make_suggestions)
                         setIsSuggestionLoading(false)
                     }
                 }
@@ -671,6 +776,7 @@ class MapViewModel(
      * made in the suggestion dialog and the information of the selected trail point.
      */
     private fun buildPrompt(): String {
+        // TODO move to another file
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
         val dialogState = _uiState.value.suggestionDialogState
 
