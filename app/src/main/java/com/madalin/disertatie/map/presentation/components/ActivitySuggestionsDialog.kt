@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.madalin.disertatie.R
@@ -31,6 +28,7 @@ import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.presentation.SuggestionDialogState
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
 fun ActivitySuggestionsDialog(
@@ -47,10 +45,11 @@ fun ActivitySuggestionsDialog(
             onDismissRequest = {},
             properties = DialogProperties(
                 dismissOnBackPress = true,
-                dismissOnClickOutside = false
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false
             )
         ) {
-            Card(modifier = modifier) {
+            Card(modifier = modifier.padding(Dimens.container)) {
                 Column(modifier = Modifier.padding(Dimens.container)) {
                     if (isSuggestionLoading) {
                         LoadingSuggestionIndicator()
@@ -109,10 +108,20 @@ private fun SuggestionSettings(
 
         Spacer(modifier = Modifier.height(Dimens.separator))
 
-        SuggestionSettingsButtons(
-            onCancel = { onDismiss() },
-            onGetSuggestions = { onAction(SuggestionAction.GetActivitySuggestions) }
-        )
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TextButton(onClick = { onDismiss() }) {
+                Text(text = stringResource(R.string.cancel))
+            }
+            Button(
+                onClick = { onAction(SuggestionAction.GetActivitySuggestions) },
+                enabled = isGetSuggestionsButtonEnabled(suggestionDialogState)
+            ) {
+                Text(text = stringResource(R.string.get_suggestions))
+            }
+        }
     }
 }
 
@@ -181,28 +190,6 @@ private fun SwitchRow(
 }
 
 @Composable
-private fun SuggestionSettingsButtons(
-    onCancel: () -> Unit,
-    onGetSuggestions: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // cancel button
-        TextButton(onClick = { onCancel() }) {
-            Text(text = stringResource(R.string.cancel))
-        }
-
-        // get suggestions button
-        Button(onClick = { onGetSuggestions() }) {
-            Text(text = stringResource(R.string.get_suggestions))
-        }
-    }
-}
-
-@Composable
 private fun LoadingSuggestionIndicator(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -230,14 +217,12 @@ private fun SuggestionResult(
             style = MaterialTheme.typography.titleLarge
         )
 
-        ElevatedCard(
-            modifier = Modifier.height(300.dp)
-        ) {
-            Text(
-                text = suggestion,
+        ElevatedCard {
+            MarkdownText(
+                markdown = suggestion,
                 modifier = Modifier
-                    .padding(Dimens.container)
-                    .verticalScroll(rememberScrollState())
+                    .padding(Dimens.container),
+                maxLines = 15
             )
         }
 
@@ -257,4 +242,13 @@ private fun SuggestionResult(
             }
         }
     }
+}
+
+private fun isGetSuggestionsButtonEnabled(state: SuggestionDialogState): Boolean {
+    return !(!state.isImagesChecked
+            && !state.isNoteChecked
+            && !state.isWeatherChecked
+            && !state.isWarningChecked
+            && !state.isTimeChecked
+            && state.additionalInfo.isEmpty())
 }

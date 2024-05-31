@@ -16,6 +16,7 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.SuggestionGenerator
 import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.action.GlobalAction
+import com.madalin.disertatie.core.domain.extension.asTime
 import com.madalin.disertatie.core.domain.model.LocationClassifications
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailImage
@@ -132,7 +133,7 @@ class MapViewModel(
      */
     private fun handleSuggestionAction(action: SuggestionAction) {
         when (action) {
-            SuggestionAction.GetActivitySuggestions -> getTrailPointActivitySuggestions()
+            SuggestionAction.GetActivitySuggestions -> getActivitySuggestionsForLocation()
             is SuggestionAction.SetImageState -> updateSuggestionDialog { it.copy(isImagesChecked = action.isChecked) }
             is SuggestionAction.SetNoteState -> updateSuggestionDialog { it.copy(isNoteChecked = action.isChecked) }
             is SuggestionAction.SetWarningState -> updateSuggestionDialog { it.copy(isWarningChecked = action.isChecked) }
@@ -628,16 +629,24 @@ class MapViewModel(
         }
     }
 
-    private fun getTrailPointActivitySuggestions() {
+    private fun getActivitySuggestionsForLocation() {
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
+        val suggestionDialogState = _uiState.value.suggestionDialogState
+
         if (selectedTrailPoint == null) {
             showStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_selected_yet)
             return
         }
 
-        suggestionGenerator.getActivitySuggestions(
-            buildPrompt(),
+        val trailPointImages = if (suggestionDialogState.isImagesChecked) {
             selectedTrailPoint.extractImages()
+        } else {
+            emptyList()
+        }
+        Log.d("xxxxxxxxxxxxxx", buildPrompt())
+        suggestionGenerator.getActivitySuggestionsForLocation(
+            buildPrompt(),
+            trailPointImages
         )
             .map { result ->
                 when (result) {
@@ -649,7 +658,7 @@ class MapViewModel(
                     }
 
                     is SuggestionResult.Error -> {
-                        showStatusBanner(StatusBannerType.Error, UiText.Resource(R.string.error))
+                        showStatusBanner(StatusBannerType.Error, UiText.Resource(R.string.could_not_make_suggestions))
                         setIsSuggestionLoading(false)
                     }
                 }
@@ -665,36 +674,34 @@ class MapViewModel(
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
         val dialogState = _uiState.value.suggestionDialogState
 
-        val imagesText = if (dialogState.isImagesChecked) {
-            "is the place in the attached images, "
-        } else ""
-
         val temperatureText = if (dialogState.isWeatherChecked) {
-            "the weather is ${selectedTrailPoint?.weather?.weatherDescription}, " +
+            "\n- the weather is ${selectedTrailPoint?.weather?.weatherDescription}, " +
                     "with a temperature of ${selectedTrailPoint?.weather?.mainTemperature} Degree Celsius, " +
-                    "and a wind speed of ${selectedTrailPoint?.weather?.windSpeed} m/s, "
+                    "and a wind speed of ${selectedTrailPoint?.weather?.windSpeed} m/s"
         } else ""
 
         val trailPointNoteText = if (dialogState.isNoteChecked) {
-            "the user said this about this location '${selectedTrailPoint?.note}', "
+            "\n- the people said this about this place '${selectedTrailPoint?.note}'"
         } else ""
 
-        // TODO convert time to local time zone
         val timeText = if (dialogState.isTimeChecked) {
-            "the time is ${selectedTrailPoint?.timestamp}, "
+            "\n- the time is ${selectedTrailPoint?.timestamp?.asTime()}"
         } else ""
 
         val warningText = if (dialogState.isWarningChecked) {
-            "it might be a dangerous place, "
+            "\n- it might be a dangerous place"
         } else ""
 
         val additionalInfoText = if (dialogState.additionalInfo.isNotEmpty()) {
-            "and the user also added this additional info '${dialogState.additionalInfo}'"
+            "\n- ${dialogState.additionalInfo}"
         } else ""
 
-        return imagesText + temperatureText + trailPointNoteText + timeText + warningText + additionalInfoText
+        return temperatureText + trailPointNoteText + timeText + warningText + additionalInfoText
     }
 
+    /**
+     * Sets the suggestion loading state to [isLoading].
+     */
     private fun setIsSuggestionLoading(isLoading: Boolean) {
         _uiState.update { it.copy(isLoadingSuggestion = isLoading) }
     }

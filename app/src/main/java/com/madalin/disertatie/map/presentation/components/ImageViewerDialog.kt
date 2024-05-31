@@ -110,7 +110,7 @@ private fun ClassificationInfo(
                 )
 
                 trailImage.classifications?.otherResults?.forEach {
-                    Text(text = getLocationTypeString(it.type) + " ${it.accuracy}")
+                    Text(text = getLocationTypeString(it.type) + ": ${it.accuracy}")
                 }
             }
         }

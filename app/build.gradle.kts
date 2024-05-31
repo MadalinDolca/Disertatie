@@ -132,6 +132,9 @@ dependencies {
     // Generative AI
     implementation(libs.generative.ai)
 
+    // Markdown
+    implementation(libs.compose.markdown)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

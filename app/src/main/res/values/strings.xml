@@ -109,4 +109,6 @@
     <string name="time">Time</string>
     <string name="include_time">Include time</string>
     <string name="no_trail_point_has_been_selected_yet">No trail point has been selected yet</string>
+    <string name="could_not_make_suggestions">Could not make suggestions</string>
+    <string name="horizontal_accuracy_radius">Horizontal accuracy radius</string>
 </resources>

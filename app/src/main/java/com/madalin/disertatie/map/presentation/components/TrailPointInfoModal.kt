@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.Action
+import com.madalin.disertatie.core.domain.extension.asDateAndTime
 import com.madalin.disertatie.core.domain.model.TrailImage
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.model.Weather
@@ -70,7 +71,6 @@ import com.madalin.disertatie.map.presentation.action.SelectedTrailPointAction
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import com.madalin.disertatie.map.presentation.util.CameraPermissionHandler
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * [ModalBottomSheet] used to display, add and modify [trailPoint] info.
@@ -131,7 +131,7 @@ fun TrailPointInfoModal(
                             Icon(imageVector = Icons.Rounded.SmartToy, contentDescription = "Ask AI")
                         }
                     },
-                    maxLines = 5,
+                    maxLines = 7,
                     shape = MaterialTheme.shapes.medium
                 )
 
@@ -383,13 +383,11 @@ private fun GeographicalData(
                 if (trailPoint.longitude >= 0) R.string.unit_longitude_east
                 else R.string.unit_longitude_west
             )
-            val date = Date(trailPoint.timestamp)
 
             Text(text = stringResource(R.string.latitude) + ": " + trailPoint.latitude + latitudeNotation)
             Text(text = stringResource(R.string.longitude) + ": " + trailPoint.longitude + longitudeNotation)
-            Text(text = stringResource(R.string.altitude) + ": " + trailPoint.altitude)
-            Text(text = stringResource(R.string.timestamp) + ": " + date)
-            Text(text = stringResource(R.string.accuracy) + ": " + trailPoint.accuracy)
+            Text(text = stringResource(R.string.timestamp) + ": " + trailPoint.timestamp.asDateAndTime())
+            Text(text = stringResource(R.string.horizontal_accuracy_radius) + ": " + trailPoint.accuracy + " m")
         }
     }
 }
