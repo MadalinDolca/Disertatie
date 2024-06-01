@@ -383,8 +383,7 @@ class MapViewModel(
 
         _uiState.update { it.copy(isTrailUploading = true) } // uploading has started
 
-        firebaseContentRepository.saveTrailAndStoreImages(
-            currentTrail, currentTrail.extractTrailImages(),
+        firebaseContentRepository.saveTrail(currentTrail,
             onSuccess = {
                 _uiState.update {
                     it.copy(
