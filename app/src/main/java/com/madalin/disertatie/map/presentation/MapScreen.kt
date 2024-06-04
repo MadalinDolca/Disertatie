@@ -70,7 +70,7 @@ import org.koin.core.parameter.parametersOf
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
-    trailIdToShow: String?,
+    trailIdToShow: String? = null,
     viewModel: MapViewModel = koinViewModel { parametersOf(trailIdToShow) },
     paddingValues: PaddingValues,
     onNavigateToCameraPreview: () -> Unit,

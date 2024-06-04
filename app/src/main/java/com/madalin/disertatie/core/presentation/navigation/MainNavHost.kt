@@ -64,7 +64,9 @@ fun MainNavHost(
             route = HomeDest.route,
             arguments = HomeDest.arguments
         ) { navBackStackEntry ->
-            val trailIdToShowOnMap = navBackStackEntry.arguments?.getString(HomeDest.trailIdArg)
+            var trailIdToShowOnMap = navBackStackEntry.arguments?.getString(HomeDest.trailIdArg)
+            trailIdToShowOnMap = HomeDest.nullIfPlaceholder(trailIdToShowOnMap) // avoid placeholder arguments
+
             HomeScreen(
                 trailIdToShowOnMap = trailIdToShowOnMap,
                 onNavigateToCameraPreview = { navController.navigateSingleTopTo(CameraPreviewDest.route) },

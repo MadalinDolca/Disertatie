@@ -33,8 +33,9 @@ object PasswordResetDest : Destination {
 
 object HomeDest : Destination {
     const val trailIdArg = "trailId"
+    const val trailIdPlaceholderArg = "{$trailIdArg}"
 
-    override val route = "home?trailId={$trailIdArg}"
+    override val route = "home?trailId=$trailIdPlaceholderArg"
 
     val arguments = listOf(navArgument(trailIdArg) {
         nullable = true
@@ -42,6 +43,7 @@ object HomeDest : Destination {
     })
 
     fun routeBuilder(trailId: String) = "home?trailId=$trailId"
+    fun nullIfPlaceholder(data: String?) = if (data == "{${trailIdArg}}") null else data
 }
 
 object CameraPreviewDest : Destination {
@@ -50,6 +52,7 @@ object CameraPreviewDest : Destination {
 
 object TrailInfoDest : Destination {
     const val idArg = "id"
+
     override val route = "trail_info/{$idArg}"
 
     val arguments = listOf(navArgument(idArg) {
@@ -57,6 +60,7 @@ object TrailInfoDest : Destination {
     })
 
     fun routeBuilder(id: String) = "trail_info/$id"
+    fun nullIfPlaceholder(data: String?) = if (data == "{${idArg}}") null else data
 }
 
 object DiscoverDest : HomeDestination {
@@ -78,6 +82,7 @@ object MapDest : HomeDestination {
     })
 
     fun routeBuilder(trailId: String) = "map?trailId=$trailId"
+    fun nullIfPlaceholder(data: String?) = if (data == "{$trailIdArg}") null else data
 }
 
 object ProfileDest : HomeDestination {

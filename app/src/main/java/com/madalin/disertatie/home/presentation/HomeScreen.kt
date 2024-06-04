@@ -53,6 +53,7 @@ fun HomeScreen(
             onNavigateToTrailInfo = onNavigateToTrailInfoWithTrailId
         )
 
+        // if this screen receives a trail ID, it will launch the map screen
         LaunchedEffect(key1 = trailIdToShowOnMap) {
             if (trailIdToShowOnMap != null) {
                 navController.navigateToMapWithTrailId(trailIdToShowOnMap)

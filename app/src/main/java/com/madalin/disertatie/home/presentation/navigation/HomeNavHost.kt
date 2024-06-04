@@ -54,7 +54,9 @@ fun HomeNavHost(
             route = MapDest.route,
             arguments = MapDest.arguments
         ) { backStackEntry ->
-            val trailIdToShow = backStackEntry.arguments?.getString(MapDest.trailIdArg)
+            var trailIdToShow = backStackEntry.arguments?.getString(MapDest.trailIdArg)
+            trailIdToShow = MapDest.nullIfPlaceholder(trailIdToShow) // avoid placeholder arguments
+
             MapScreen(
                 trailIdToShow = trailIdToShow,
                 paddingValues = paddingValues,

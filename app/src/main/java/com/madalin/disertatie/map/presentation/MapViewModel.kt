@@ -75,7 +75,7 @@ class MapViewModel(
     private lateinit var locationClient: LocationClient
 
     // trail ID obtained from the navigation
-    private val trailId: String? by lazy { savedStateHandle[MapDest.trailIdArg] }
+    private val trailId: String? by lazy { MapDest.nullIfPlaceholder(savedStateHandle[MapDest.trailIdArg]) }
 
     init {
         Log.d("MapViewModel", "trailId: $trailId")
