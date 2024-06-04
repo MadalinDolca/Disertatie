@@ -17,7 +17,6 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.SuggestionGenerator
 import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.action.GlobalAction
-import com.madalin.disertatie.core.domain.extension.asTime
 import com.madalin.disertatie.core.domain.model.LocationClassifications
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailImage
@@ -25,6 +24,7 @@ import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.domain.result.SuggestionResult
+import com.madalin.disertatie.core.domain.result.TrailResult
 import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.domain.validation.TrailValidator
 import com.madalin.disertatie.core.presentation.GlobalDriver
@@ -38,10 +38,11 @@ import com.madalin.disertatie.map.domain.LocationClient
 import com.madalin.disertatie.map.domain.extension.hasSameCoordinates
 import com.madalin.disertatie.map.domain.extension.toLatLng
 import com.madalin.disertatie.map.domain.repository.WeatherRepository
-import com.madalin.disertatie.map.domain.requestLocationSettings
 import com.madalin.disertatie.map.domain.result.LocationClassificationResult
 import com.madalin.disertatie.map.domain.result.LocationFetchingResult
 import com.madalin.disertatie.map.domain.result.WeatherResult
+import com.madalin.disertatie.map.domain.util.buildPrompt
+import com.madalin.disertatie.map.domain.util.requestLocationSettings
 import com.madalin.disertatie.map.presentation.action.LocationAction
 import com.madalin.disertatie.map.presentation.action.MapAction
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
@@ -49,6 +50,7 @@ import com.madalin.disertatie.map.presentation.action.TrailAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,10 +77,12 @@ class MapViewModel(
     private lateinit var locationClient: LocationClient
 
     // trail ID obtained from the navigation
-    private val trailId: String? by lazy { MapDest.nullIfPlaceholder(savedStateHandle[MapDest.trailIdArg]) }
+    private val launchedTrailId: String? by lazy { MapDest.nullIfPlaceholder(savedStateHandle[MapDest.trailIdArg]) }
 
     init {
-        Log.d("MapViewModel", "trailId: $trailId")
+        if (launchedTrailId != null) {
+            viewLaunchedTrail()
+        }
     }
 
     companion object {
@@ -166,6 +170,8 @@ class MapViewModel(
                     hasWarning = false
                 )
             }
+
+            TrailAction.HideLoadingLaunchedTrailDialog -> hideLoadingLaunchedTrailDialog()
         }
     }
 
@@ -761,7 +767,7 @@ class MapViewModel(
         }
 
         suggestionGenerator.getActivitySuggestionsForLocation(
-            buildPrompt(),
+            buildPrompt(_uiState.value.selectedTrailPoint, _uiState.value.suggestionDialogState),
             trailPointImages
         )
             .map { result ->
@@ -783,43 +789,43 @@ class MapViewModel(
     }
 
     /**
-     * Builds and returns a prompt to be used in a suggestion generation based on the settings made
-     * made in the suggestion dialog and the information of the selected trail point.
-     */
-    private fun buildPrompt(): String {
-        // TODO move to another file
-        val selectedTrailPoint = _uiState.value.selectedTrailPoint
-        val dialogState = _uiState.value.suggestionDialogState
-
-        val temperatureText = if (dialogState.isWeatherChecked) {
-            "\n- the weather is ${selectedTrailPoint?.weather?.weatherDescription}, " +
-                    "with a temperature of ${selectedTrailPoint?.weather?.mainTemperature} Degree Celsius, " +
-                    "and a wind speed of ${selectedTrailPoint?.weather?.windSpeed} m/s"
-        } else ""
-
-        val trailPointNoteText = if (dialogState.isNoteChecked) {
-            "\n- the people said this about this place '${selectedTrailPoint?.note}'"
-        } else ""
-
-        val timeText = if (dialogState.isTimeChecked) {
-            "\n- the time is ${selectedTrailPoint?.timestamp?.asTime()}"
-        } else ""
-
-        val warningText = if (dialogState.isWarningChecked) {
-            "\n- it might be a dangerous place"
-        } else ""
-
-        val additionalInfoText = if (dialogState.additionalInfo.isNotEmpty()) {
-            "\n- ${dialogState.additionalInfo}"
-        } else ""
-
-        return temperatureText + trailPointNoteText + timeText + warningText + additionalInfoText
-    }
-
-    /**
      * Sets the suggestion loading state to [isLoading].
      */
     private fun setIsSuggestionLoading(isLoading: Boolean) {
         _uiState.update { it.copy(isLoadingSuggestion = isLoading) }
+    }
+
+    private fun viewLaunchedTrail() {
+        val trailId = launchedTrailId
+        if (trailId == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingLaunchedTrail = true) } // loading
+
+            val result = async { firebaseContentRepository.getFullTrailById(trailId) }.await()
+            when (result) {
+                is TrailResult.Success -> {
+                    showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_loaded)
+                    _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
+                }
+
+                TrailResult.TrailNotFound -> {
+                    showStatusBanner(StatusBannerType.Error, R.string.trail_not_found)
+                    _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
+                }
+
+                is TrailResult.Error -> {
+                    showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_trail)
+                    _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
+                }
+            }
+        }
+    }
+
+    private fun hideLoadingLaunchedTrailDialog() {
+        _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
     }
 }

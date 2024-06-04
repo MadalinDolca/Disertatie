@@ -10,6 +10,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.madalin.disertatie.core.data.CollectionPath
 import com.madalin.disertatie.core.data.StoragePath
 import com.madalin.disertatie.core.data.util.imageUploadTasks
+import com.madalin.disertatie.core.data.util.mapTrailPointsAndImageUrls
 import com.madalin.disertatie.core.data.util.trailWriteTasks
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
@@ -18,6 +19,7 @@ import com.madalin.disertatie.core.domain.result.TrailDeleteResult
 import com.madalin.disertatie.core.domain.result.TrailImagesResult
 import com.madalin.disertatie.core.domain.result.TrailInfoResult
 import com.madalin.disertatie.core.domain.result.TrailPointsResult
+import com.madalin.disertatie.core.domain.result.TrailResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.domain.result.TrailsListResult
 import kotlinx.coroutines.CoroutineDispatcher
@@ -98,11 +100,11 @@ class FirebaseContentRepositoryImpl(
     }
 
     override suspend fun getTrailImagesByTrailId(trailId: String): TrailImagesResult {
-        val ref = storage.getReference(StoragePath.TRAIL_IMAGES).child(trailId)
+        val storageRef = storage.getReference(StoragePath.TRAIL_IMAGES).child(trailId)
 
         try {
             val images = mutableListOf<String>()
-            ref.listAll().await().items.forEach {
+            storageRef.listAll().await().items.forEach {
                 images.add(it.downloadUrl.await().toString())
             }
             return TrailImagesResult.Success(images)
@@ -111,9 +113,7 @@ class FirebaseContentRepositoryImpl(
         }
     }
 
-    override suspend fun updateTrailById(
-        trailId: String, newData: Map<String, Any>
-    ): TrailUpdateResult {
+    override suspend fun updateTrailById(trailId: String, newData: Map<String, Any>): TrailUpdateResult {
         val docRef = firestore.collection(CollectionPath.TRAILS).document(trailId)
 
         try {
@@ -126,13 +126,39 @@ class FirebaseContentRepositoryImpl(
 
     override suspend fun deleteTrailById(trailId: String): TrailDeleteResult {
         // TODO delete trailImages collection from document and delete images from storage
-        val doc = firestore.collection(CollectionPath.TRAILS).document(trailId)
+        val docRef = firestore.collection(CollectionPath.TRAILS).document(trailId)
 
         try {
-            doc.delete().await()
+            docRef.delete().await()
             return TrailDeleteResult.Success
         } catch (e: Exception) {
             return TrailDeleteResult.Error(e.message)
+        }
+    }
+
+    override suspend fun getFullTrailById(trailId: String): TrailResult {
+        val trailDocRef = firestore.collection(CollectionPath.TRAILS).document(trailId)
+        val trailPointsColRef = trailDocRef.collection(CollectionPath.TRAIL_POINTS_LIST)
+        val storageRef = storage.getReference(StoragePath.TRAIL_IMAGES).child(trailId)
+
+        try {
+            // retrieves trail info and points without images
+            val trail = trailDocRef.get().await().toObject<Trail>() ?: return TrailResult.TrailNotFound
+            val trailPoints = trailPointsColRef.get().await().toObjects<TrailPoint>()
+
+            // retrieves trail images
+            val images = mutableListOf<String>()
+            storageRef.listAll().await().items.forEach {
+                images.add(it.downloadUrl.await().toString())
+            }
+
+            // maps the trail points and images
+            mapTrailPointsAndImageUrls(trailPoints, images)
+            trail.trailPointsList = trailPoints.toMutableList()
+
+            return TrailResult.Success(trail)
+        } catch (e: Exception) {
+            return TrailResult.Error(e.message)
         }
     }
 }

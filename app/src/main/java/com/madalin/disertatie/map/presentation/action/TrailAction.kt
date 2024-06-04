@@ -32,4 +32,7 @@ sealed class TrailAction : Action {
     data object DeleteStpWeather : TrailAction()
     data class UpdateStpWarningState(val hasWarning: Boolean) : TrailAction()
     data object ClearStpData : TrailAction()
+
+    // launched trail
+    data object HideLoadingLaunchedTrailDialog : TrailAction()
 }

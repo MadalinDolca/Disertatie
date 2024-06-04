@@ -9,6 +9,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class TrailImage(
     val id: String = generateId(),
+    var imageUrl: String = "",
     @get:Exclude var image: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
     @get:Exclude var classifications: LocationClassifications? = null
 ) : Parcelable

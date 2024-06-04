@@ -5,6 +5,7 @@ import com.madalin.disertatie.core.domain.result.TrailDeleteResult
 import com.madalin.disertatie.core.domain.result.TrailImagesResult
 import com.madalin.disertatie.core.domain.result.TrailInfoResult
 import com.madalin.disertatie.core.domain.result.TrailPointsResult
+import com.madalin.disertatie.core.domain.result.TrailResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.domain.result.TrailsListResult
 import kotlinx.coroutines.flow.Flow
@@ -51,4 +52,9 @@ interface FirebaseContentRepository {
      * Deletes the trail with the given [trailId].
      */
     suspend fun deleteTrailById(trailId: String): TrailDeleteResult
+
+    /**
+     * Retrieves the complete data of the trail with the given [trailId] as a [TrailResult].
+     */
+    suspend fun getFullTrailById(trailId: String): TrailResult
 }

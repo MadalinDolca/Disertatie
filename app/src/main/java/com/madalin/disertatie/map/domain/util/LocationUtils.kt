@@ -1,4 +1,4 @@
-package com.madalin.disertatie.map.domain
+package com.madalin.disertatie.map.domain.util
 
 import android.content.Context
 import android.content.IntentSender

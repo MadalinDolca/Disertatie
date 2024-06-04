@@ -150,4 +150,7 @@
     <string name="trail_has_been_updated">Trail has been updated</string>
     <string name="could_not_get_trail_images">Could not get trail images</string>
     <string name="loading_images">Loading images</string>
+    <string name="no_trail_id_has_been_provided">No trail ID has been provided</string>
+    <string name="could_not_get_trail">Could not get trail</string>
+    <string name="trail_has_been_loaded">Trail has been loaded</string>
 </resources>

@@ -52,6 +52,7 @@ import com.google.maps.android.compose.Polyline
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.model.Trail
+import com.madalin.disertatie.core.presentation.components.LoadingDialog
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.domain.extension.toLatLng
 import com.madalin.disertatie.map.presentation.action.LocationAction
@@ -141,6 +142,12 @@ fun MapScreen(
             onAction = viewModel::handleAction
         )
     }
+
+    LoadingDialog(
+        isVisible = uiState.isLoadingLaunchedTrail,
+        message = stringResource(R.string.loading),
+        onDismiss = { viewModel.handleAction(TrailAction.HideLoadingLaunchedTrailDialog) }
+    )
 }
 
 @Composable

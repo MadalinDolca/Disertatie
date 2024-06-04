@@ -3,6 +3,12 @@ package com.madalin.disertatie.core.domain.result
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
 
+sealed class TrailResult {
+    data class Success(val trail: Trail) : TrailResult()
+    data object TrailNotFound : TrailResult()
+    data class Error(val error: String?) : TrailResult()
+}
+
 sealed class TrailsListResult {
     data class Success(val trails: List<Trail>) : TrailsListResult()
     data class Error(val error: String?) : TrailsListResult()
