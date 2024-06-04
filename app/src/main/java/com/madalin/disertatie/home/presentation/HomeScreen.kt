@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,27 +24,40 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.madalin.disertatie.core.presentation.navigation.DiscoverDest
+import com.madalin.disertatie.core.presentation.navigation.HomeDestination
+import com.madalin.disertatie.core.presentation.navigation.MapDest
+import com.madalin.disertatie.core.presentation.navigation.ProfileDest
 import com.madalin.disertatie.core.presentation.navigation.navigateSingleTopTo
+import com.madalin.disertatie.core.presentation.navigation.navigateToMapWithTrailId
 import com.madalin.disertatie.core.presentation.util.Dimens
-import com.madalin.disertatie.home.presentation.navigation.HomeDestination
-import com.madalin.disertatie.home.presentation.navigation.HomeNavGraph
+import com.madalin.disertatie.home.presentation.navigation.HomeNavHost
 
 @Composable
 fun HomeScreen(
+    trailIdToShowOnMap: String? = null,
     onNavigateToCameraPreview: () -> Unit,
-    onGetImageResultOnce: () -> Bitmap?
+    onGetImageResultOnce: () -> Bitmap?,
+    onNavigateToTrailInfoWithTrailId: (String) -> Unit
 ) {
     val navController = rememberNavController()
 
     Scaffold(
         bottomBar = { HomeBottomBar(navController = navController) }
     ) { paddingValues ->
-        HomeNavGraph(
+        HomeNavHost(
             navController = navController,
             paddingValues = paddingValues,
             onNavigateToCameraPreview = { onNavigateToCameraPreview() },
-            onGetImageResultOnce = { onGetImageResultOnce() }
+            onGetImageResultOnce = { onGetImageResultOnce() },
+            onNavigateToTrailInfo = onNavigateToTrailInfoWithTrailId
         )
+
+        LaunchedEffect(key1 = trailIdToShowOnMap) {
+            if (trailIdToShowOnMap != null) {
+                navController.navigateToMapWithTrailId(trailIdToShowOnMap)
+            }
+        }
     }
 }
 
@@ -61,11 +75,7 @@ private fun HomeBottomBar(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    val screens = listOf(
-        HomeDestination.Discover,
-        HomeDestination.Map,
-        HomeDestination.Profile
-    )
+    val destinations = listOf(DiscoverDest, MapDest, ProfileDest)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -76,9 +86,9 @@ private fun HomeBottomBar(
             .clip(MaterialTheme.shapes.large),
         windowInsets = WindowInsets(bottom = 0)
     ) {
-        screens.forEach { screen ->
+        destinations.forEach { destination ->
             AddItem(
-                screen = screen,
+                destination = destination,
                 currentDestination = currentDestination,
                 navController = navController
             )
@@ -88,16 +98,16 @@ private fun HomeBottomBar(
 
 @Composable
 private fun RowScope.AddItem(
-    screen: HomeDestination,
+    destination: HomeDestination,
     currentDestination: NavDestination?,
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
     NavigationBarItem(
-        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-        onClick = { navController.navigateSingleTopTo(screen.route) },
-        icon = { Icon(imageVector = screen.icon, contentDescription = screen.title.asString()) },
+        selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true,
+        onClick = { navController.navigateSingleTopTo(destination.route) },
+        icon = { Icon(imageVector = destination.icon, contentDescription = destination.title.asString()) },
         modifier = modifier,
-        label = { Text(text = screen.title.asString()) }
+        label = { Text(text = destination.title.asString()) }
     )
 }

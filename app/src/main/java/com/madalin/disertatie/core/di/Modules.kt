@@ -1,5 +1,6 @@
 package com.madalin.disertatie.core.di
 
+import androidx.lifecycle.SavedStateHandle
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -19,6 +20,8 @@ import com.madalin.disertatie.core.presentation.MainActivityViewModel
 import com.madalin.disertatie.map.data.repository.WeatherRepositoryImpl
 import com.madalin.disertatie.map.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.presentation.MapViewModel
+import com.madalin.disertatie.profile.presentation.ProfileViewModel
+import com.madalin.disertatie.trail_info.TrailInfoViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -49,5 +52,7 @@ val viewModelModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
     viewModel { PasswordResetViewModel(get()) }
-    viewModel { MapViewModel(get(), get(), get(), get(), get()) }
+    viewModel { (savedStateHandle: SavedStateHandle) -> MapViewModel(get(), get(), get(), get(), get(), savedStateHandle) }
+    viewModel { ProfileViewModel(get(), get()) }
+    viewModel { (savedStateHandle: SavedStateHandle) -> TrailInfoViewModel(get(), get(), savedStateHandle) }
 }

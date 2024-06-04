@@ -54,7 +54,7 @@ fun TrailEndDialog(
                         trailName = trail.name,
                         trailNameError = trailNameError,
                         trailDescription = trail.description,
-                        isTrailVisible = trail.isVisible,
+                        isTrailPublic = trail.public,
                         onAction = onAction
                     )
                 } else {
@@ -70,7 +70,7 @@ private fun TrailForm(
     trailName: String,
     trailNameError: UiText,
     trailDescription: String,
-    isTrailVisible: Boolean,
+    isTrailPublic: Boolean,
     onAction: (Action) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -119,7 +119,7 @@ private fun TrailForm(
         ) {
             Text(text = stringResource(R.string.make_trail_public))
             Switch(
-                checked = isTrailVisible,
+                checked = isTrailPublic,
                 onCheckedChange = { onAction(TrailAction.SetTrailVisibility(it)) }
             )
         }

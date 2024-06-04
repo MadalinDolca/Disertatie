@@ -6,7 +6,7 @@ import com.google.firebase.ktx.Firebase
 /**
  * Object that contains the names of the collections from [Firestore][Firebase.firestore].
  */
-object DBCollection {
+object CollectionPath {
     const val USERS = "users"
     const val TRAILS = "trails"
     const val TRAIL_POINTS_LIST = "trailPointsList"

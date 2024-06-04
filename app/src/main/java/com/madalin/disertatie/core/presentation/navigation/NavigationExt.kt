@@ -6,18 +6,30 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 
 /**
- * Navigates to a [route] with SingleTop behaviour.
+ * Navigates to the given [destination] with SingleTop behaviour.
  *
  * Pops backstack to start destination, preserves destination state and observes SingleTop.
  */
-fun NavHostController.navigateSingleTopTo(route: String) {
-    this.navigate(route) {
+fun NavHostController.navigateSingleTopTo(destination: String) {
+    this.navigate(destination) {
         popUpTo(this@navigateSingleTopTo.graph.findStartDestination().id) {
             saveState = true
         }
 
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+/**
+ * Navigates to the given [destination] with SingleTop behaviour if it is different from the current
+ * destination.
+ */
+fun NavHostController.navigateSingleTopToIfDifferent(destination: String) {
+    this.currentBackStackEntry?.destination?.route?.let { currentRoute ->
+        if (currentRoute != destination) {
+            this.navigateSingleTopTo(destination)
+        }
     }
 }
 
@@ -39,4 +51,25 @@ fun NavHostController.getImageResultOnce(): Bitmap? {
 fun NavHostController.goBackWithImage(image: Bitmap) {
     this.previousBackStackEntry?.savedStateHandle?.set("capturedImage", image) // result to be returned to the previous screen
     this.popBackStack() // go back to the previous screen
+}
+
+/**
+ * Navigates to the trail info screen that has the given [trailId].
+ */
+fun NavHostController.navigateToTrailInfoWithTrailId(trailId: String) {
+    this.navigate(TrailInfoDest.routeBuilder(trailId))
+}
+
+/**
+ * Navigates to the home screen with this [trailId].
+ */
+fun NavHostController.navigateToHomeWithTrailId(trailId: String) {
+    this.navigate(HomeDest.routeBuilder(trailId))
+}
+
+/**
+ * Navigates to the map screen with this [trailId] to show the trail on the map.
+ */
+fun NavHostController.navigateToMapWithTrailId(trailId: String) {
+    this.navigate(MapDest.routeBuilder(trailId))
 }

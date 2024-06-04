@@ -9,11 +9,11 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class TrailPoint(
     var id: String = generateId(),
-    var timestamp: Long,
-    var latitude: Double,
-    var longitude: Double,
-    var altitude: Double,
-    var accuracy: Float,
+    var timestamp: Long = 0,
+    var latitude: Double = 0.0,
+    var longitude: Double = 0.0,
+    var altitude: Double = 0.0,
+    var accuracy: Float = 0f,
     var note: String = "",
     var imagesList: MutableList<TrailImage> = mutableListOf(),
     var weather: Weather? = null,

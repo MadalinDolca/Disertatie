@@ -65,14 +65,16 @@ import com.madalin.disertatie.map.presentation.components.UserMarker
 import com.madalin.disertatie.map.presentation.util.LocationPermissionsHandler
 import com.madalin.disertatie.map.presentation.util.bitmapDescriptor
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
+    trailIdToShow: String?,
+    viewModel: MapViewModel = koinViewModel { parametersOf(trailIdToShow) },
     paddingValues: PaddingValues,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
-    viewModel: MapViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val applicationContext = LocalContext.current.applicationContext

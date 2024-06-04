@@ -12,6 +12,7 @@ import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetScre
 import com.madalin.disertatie.auth.presentation.register.RegisterScreen
 import com.madalin.disertatie.camera_preview.presentation.CameraPreviewScreen
 import com.madalin.disertatie.home.presentation.HomeScreen
+import com.madalin.disertatie.trail_info.TrailInfoScreen
 
 @Composable
 fun MainNavHost(
@@ -37,39 +38,58 @@ fun MainNavHost(
         }
     ) {
         // login screen
-        composable(route = MainDestination.Login.route) {
+        composable(route = LoginDest.route) {
             LoginScreenRoot(
-                onNavigateToRegisterClick = { navController.navigateSingleTopTo(MainDestination.Register.route) },
-                onNavigateToPasswordResetClick = { navController.navigateSingleTopTo(MainDestination.PasswordReset.route) }
+                onNavigateToRegisterClick = { navController.navigateSingleTopTo(RegisterDest.route) },
+                onNavigateToPasswordResetClick = { navController.navigateSingleTopTo(PasswordResetDest.route) }
             )
         }
 
         // register screen
-        composable(route = MainDestination.Register.route) {
+        composable(route = RegisterDest.route) {
             RegisterScreen(
-                onNavigateToLoginClick = { navController.navigateSingleTopTo(MainDestination.Login.route) }
+                onNavigateToLoginClick = { navController.navigateSingleTopTo(LoginDest.route) }
             )
         }
 
         // password reset screen
-        composable(route = MainDestination.PasswordReset.route) {
+        composable(route = PasswordResetDest.route) {
             PasswordResetScreen(
-                onNavigateToLoginClick = { navController.navigateSingleTopTo(MainDestination.Login.route) }
+                onNavigateToLoginClick = { navController.navigateSingleTopTo(LoginDest.route) }
             )
         }
 
         // home screen
-        composable(route = MainDestination.Home.route) {
+        composable(
+            route = HomeDest.route,
+            arguments = HomeDest.arguments
+        ) { navBackStackEntry ->
+            val trailIdToShowOnMap = navBackStackEntry.arguments?.getString(HomeDest.trailIdArg)
             HomeScreen(
-                onNavigateToCameraPreview = { navController.navigateSingleTopTo(MainDestination.CameraPreview.route) },
-                onGetImageResultOnce = navController::getImageResultOnce
+                trailIdToShowOnMap = trailIdToShowOnMap,
+                onNavigateToCameraPreview = { navController.navigateSingleTopTo(CameraPreviewDest.route) },
+                onGetImageResultOnce = navController::getImageResultOnce,
+                onNavigateToTrailInfoWithTrailId = navController::navigateToTrailInfoWithTrailId
             )
         }
 
         // camera preview screen
-        composable(route = MainDestination.CameraPreview.route) {
+        composable(route = CameraPreviewDest.route) {
             CameraPreviewScreen(
                 onGoBackWithImage = navController::goBackWithImage,
+                onGoBack = navController::popBackStack
+            )
+        }
+
+        // trail info screen
+        composable(
+            route = TrailInfoDest.route,
+            arguments = TrailInfoDest.arguments
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString(TrailInfoDest.idArg)
+            TrailInfoScreen(
+                trailId = id,
+                onNavigateToHomeWithTrailId = navController::navigateToHomeWithTrailId,
                 onGoBack = navController::popBackStack
             )
         }

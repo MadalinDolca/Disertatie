@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
@@ -29,6 +30,7 @@ import com.madalin.disertatie.core.domain.validation.TrailValidator
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
+import com.madalin.disertatie.core.presentation.navigation.MapDest
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.map.domain.DefaultLocationClient
 import com.madalin.disertatie.map.domain.LocationClassifier
@@ -63,13 +65,21 @@ class MapViewModel(
     private val firebaseUserRepository: FirebaseUserRepository,
     private val firebaseContentRepository: FirebaseContentRepository,
     private val weatherRepository: WeatherRepository,
-    private val suggestionGenerator: SuggestionGenerator
+    private val suggestionGenerator: SuggestionGenerator,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState = _uiState.asStateFlow()
 
     private lateinit var locationFetchingScope: CoroutineScope
     private lateinit var locationClient: LocationClient
+
+    // trail ID obtained from the navigation
+    private val trailId: String? by lazy { savedStateHandle[MapDest.trailIdArg] }
+
+    init {
+        Log.d("MapViewModel", "trailId: $trailId")
+    }
 
     companion object {
         private const val MIN_DISTANCE = 3
@@ -78,7 +88,7 @@ class MapViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        locationFetchingScope.cancel()
+        stopLocationFetching()
     }
 
     /**
@@ -126,7 +136,7 @@ class MapViewModel(
             TrailAction.StopTrailCreation -> stopTrailCreation()
             is TrailAction.UpdateTrailName -> updateTrail { it.copy(name = action.name) }
             is TrailAction.UpdateTrailDescription -> updateTrail { it.copy(description = action.description) }
-            is TrailAction.SetTrailVisibility -> updateTrail { it.copy(isVisible = action.isVisible) }
+            is TrailAction.SetTrailVisibility -> updateTrail { it.copy(public = action.isPublic) }
             TrailAction.SaveTrail -> saveTrail()
             TrailAction.DontSaveTrail -> dontSaveTrail()
 
@@ -220,7 +230,9 @@ class MapViewModel(
 
     fun stopLocationFetching() {
         stopTrailCreation()
-        locationFetchingScope.cancel()
+        if (::locationClient.isInitialized) {
+            locationFetchingScope.cancel()
+        }
     }
 
     /**
@@ -809,9 +821,5 @@ class MapViewModel(
      */
     private fun setIsSuggestionLoading(isLoading: Boolean) {
         _uiState.update { it.copy(isLoadingSuggestion = isLoading) }
-    }
-
-    fun logout() {
-        globalDriver.handleAction(GlobalAction.SetUserLoginStatus(false))
     }
 }

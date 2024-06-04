@@ -10,10 +10,10 @@ import java.util.Date
 @Parcelize
 data class Trail(
     var id: String = generateId(),
-    var userId: String,
+    var userId: String = "",
     var name: String = "",
     var description: String = "",
-    var isVisible: Boolean = false,
+    var public: Boolean = false,
     var length: Int = -1,
     var difficulty: Int = -1,
     var startTime: Date? = null,

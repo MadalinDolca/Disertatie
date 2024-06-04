@@ -10,7 +10,7 @@ import com.google.firebase.ktx.Firebase
 import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
 import com.madalin.disertatie.auth.domain.failures.LoginFailure
 import com.madalin.disertatie.auth.domain.failures.RegisterFailure
-import com.madalin.disertatie.core.data.DBCollection
+import com.madalin.disertatie.core.data.CollectionPath
 import com.madalin.disertatie.core.domain.model.User
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -47,7 +47,7 @@ class FirebaseAuthRepositoryImpl(
         user: User,
         onSuccess: () -> Unit, onFailure: (String?) -> Unit
     ) {
-        firestore.collection(DBCollection.USERS)
+        firestore.collection(CollectionPath.USERS)
             .document(user.id) // adds user data into the document with the user id as a name
             .set(user)
             .addOnCompleteListener { task ->

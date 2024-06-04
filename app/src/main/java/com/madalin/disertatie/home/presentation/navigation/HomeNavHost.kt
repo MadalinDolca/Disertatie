@@ -9,26 +9,30 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.madalin.disertatie.core.presentation.navigation.DiscoverDest
+import com.madalin.disertatie.core.presentation.navigation.MapDest
+import com.madalin.disertatie.core.presentation.navigation.ProfileDest
 import com.madalin.disertatie.discover.DiscoverScreen
 import com.madalin.disertatie.map.presentation.MapScreen
-import com.madalin.disertatie.profile.ProfileScreen
+import com.madalin.disertatie.profile.presentation.ProfileScreen
 
 @Composable
-fun HomeNavGraph(
+fun HomeNavHost(
     navController: NavHostController,
     paddingValues: PaddingValues,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
+    onNavigateToTrailInfo: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = HomeDestination.Map.route,
+        startDestination = MapDest.route,
         modifier = modifier
     ) {
         // discover screen
         composable(
-            route = HomeDestination.Discover.route,
+            route = DiscoverDest.route,
             enterTransition = {
                 slideIntoContainer(
                     AnimatedContentTransitionScope.SlideDirection.Right,
@@ -46,8 +50,13 @@ fun HomeNavGraph(
         }
 
         // map screen
-        composable(route = HomeDestination.Map.route) {
+        composable(
+            route = MapDest.route,
+            arguments = MapDest.arguments
+        ) { backStackEntry ->
+            val trailIdToShow = backStackEntry.arguments?.getString(MapDest.trailIdArg)
             MapScreen(
+                trailIdToShow = trailIdToShow,
                 paddingValues = paddingValues,
                 onNavigateToCameraPreview = { onNavigateToCameraPreview() },
                 onGetImageResultOnce = { onGetImageResultOnce() }
@@ -55,7 +64,7 @@ fun HomeNavGraph(
         }
 
         // profile screen
-        composable(route = HomeDestination.Profile.route,
+        composable(route = ProfileDest.route,
             enterTransition = {
                 slideIntoContainer(
                     AnimatedContentTransitionScope.SlideDirection.Left,
@@ -67,8 +76,12 @@ fun HomeNavGraph(
                     AnimatedContentTransitionScope.SlideDirection.Right,
                     tween(300)
                 )
-            }) {
-            ProfileScreen()
+            }
+        ) {
+            ProfileScreen(
+                paddingValues = paddingValues,
+                onNavigateToTrailInfo = { onNavigateToTrailInfo(it) }
+            )
         }
     }
 }

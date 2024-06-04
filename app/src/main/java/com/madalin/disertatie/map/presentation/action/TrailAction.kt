@@ -15,7 +15,7 @@ sealed class TrailAction : Action {
     data object StopTrailCreation : TrailAction()
     data class UpdateTrailName(val name: String) : TrailAction()
     data class UpdateTrailDescription(val description: String) : TrailAction()
-    data class SetTrailVisibility(val isVisible: Boolean) : TrailAction()
+    data class SetTrailVisibility(val isPublic: Boolean) : TrailAction()
     data object SaveTrail : TrailAction()
     data object DontSaveTrail : TrailAction()
 

@@ -1,6 +1,8 @@
 package com.madalin.disertatie.core.domain.repository
 
 import com.madalin.disertatie.core.domain.model.Trail
+import com.madalin.disertatie.core.domain.model.TrailPoint
+import com.madalin.disertatie.core.domain.result.TrailInfoError
 
 interface FirebaseContentRepository {
     /**
@@ -19,8 +21,33 @@ interface FirebaseContentRepository {
      * @param onSuccess Invoked when the operation succeeds with the trails list as parameter.
      * @param onFailure Invoked when the operation fails.
      */
-    fun getUserTrails(
+    fun getTrailsByUserId(
         userId: String,
         onSuccess: (trails: List<Trail>) -> Unit, onFailure: (message: String?) -> Unit
+    )
+
+    fun getTrailInfoById(
+        trailId: String,
+        onSuccess: (trail: Trail) -> Unit, onFailure: (error: TrailInfoError) -> Unit
+    )
+
+    fun getTrailPointsByTrailId(
+        trailId: String,
+        onSuccess: (trailPoints: MutableList<TrailPoint>) -> Unit, onFailure: (message: String?) -> Unit
+    )
+
+    fun getTrailImagesByTrailId(
+        trailId: String,
+        onSuccess: (images: List<String>) -> Unit, onFailure: (message: String?) -> Unit
+    )
+
+    fun updateTrailById(
+        trailId: String, newData: Map<String, Any>,
+        onSuccess: () -> Unit, onFailure: (message: String?) -> Unit
+    )
+
+    fun deleteTrailById(
+        trailId: String,
+        onSuccess: () -> Unit, onFailure: (message: String?) -> Unit
     )
 }

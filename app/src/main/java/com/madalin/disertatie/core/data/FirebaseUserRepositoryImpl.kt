@@ -27,7 +27,7 @@ class FirebaseUserRepositoryImpl : FirebaseUserRepository {
             return
         }
 
-        firestore.collection(DBCollection.USERS).document(userId)
+        firestore.collection(CollectionPath.USERS).document(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     onFailure(UserFailure.DataFetchingError)
