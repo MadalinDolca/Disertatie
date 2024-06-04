@@ -1,11 +1,11 @@
 package com.madalin.disertatie.profile.presentation
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.GlobalAction
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
+import com.madalin.disertatie.core.domain.result.TrailsListResult
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
@@ -32,9 +32,7 @@ class ProfileViewModel(
             }
         }
 
-        //viewModelScope.launch {
         getUserTrails()
-        //}
     }
 
     private fun GlobalState.reduce() {
@@ -55,18 +53,22 @@ class ProfileViewModel(
     }
 
     /**
-     * Obtains the trails made by the current user.
+     * Obtains the trails made by the current user and listens for updates.
      */
     private fun getUserTrails() {
-        firebaseContentRepository.getTrailsByUserId(_uiState.value.currentUser.id,
-            onSuccess = { trailsList ->
-                _uiState.update { it.copy(userTrails = trailsList) }
-            },
-            onFailure = {
-                val message = it ?: R.string.could_not_load_trails
-                showStatusBanner(StatusBannerType.Error, message)
+        viewModelScope.launch {
+            val result = launch {
+                firebaseContentRepository
+                    .observeTrailsByUserId(_uiState.value.currentUser.id)
+                    .collect { result ->
+                        when (result) {
+                            is TrailsListResult.Success -> _uiState.update { it.copy(userTrails = result.trails) }
+                            is TrailsListResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_load_trails)
+                        }
+                    }
             }
-        )
+            result.join() // keeps the coroutine running to listen for updates
+        }
     }
 
     /**

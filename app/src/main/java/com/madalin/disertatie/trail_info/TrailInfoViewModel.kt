@@ -8,7 +8,11 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.GlobalAction
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
-import com.madalin.disertatie.core.domain.result.TrailInfoError
+import com.madalin.disertatie.core.domain.result.TrailDeleteResult
+import com.madalin.disertatie.core.domain.result.TrailImagesResult
+import com.madalin.disertatie.core.domain.result.TrailInfoResult
+import com.madalin.disertatie.core.domain.result.TrailPointsResult
+import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
@@ -16,6 +20,7 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.navigation.TrailInfoDest
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.trail_info.action.TrailInfoAction
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -41,7 +46,7 @@ class TrailInfoViewModel(
         }
 
         // get trail info
-        viewModelScope.launch { getTrailInfo() }
+        getTrailInfo()
     }
 
     private fun GlobalState.reduce() {
@@ -71,7 +76,7 @@ class TrailInfoViewModel(
     private fun updateCurrentTrail(update: (Trail) -> Trail) {
         val trail = _uiState.value.trail
         if (trail == null) {
-            Log.e("TrailInfoViewModel", "updateTrail: trail is null")
+            Log.e("TrailInfoViewModel", "updateCurrentTrail: trail is null")
             return
         }
 
@@ -89,37 +94,38 @@ class TrailInfoViewModel(
             return
         }
 
-        _uiState.update { it.copy(isLoadingInfo = true) } // loading
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingInfo = true) } // loading
+            val trailResponse = async { firebaseContentRepository.getTrailInfoById(id) }.await()
 
-        firebaseContentRepository.getTrailInfoById(
-            id,
-            onSuccess = { obtainedTrail ->
-                _uiState.update {
+            when (trailResponse) {
+                is TrailInfoResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            trail = trailResponse.trail,
+                            isLoadingInfo = false,
+                            loadingInfoError = UiText.Empty
+                        )
+                    }
+                    getTrailPoints()
+                    getTrailImages()
+                }
+
+                TrailInfoResult.NotFound -> _uiState.update {
                     it.copy(
-                        trail = obtainedTrail,
                         isLoadingInfo = false,
-                        loadingInfoError = UiText.Empty
+                        loadingInfoError = UiText.Resource(R.string.trail_not_found)
                     )
                 }
 
-                viewModelScope.launch { getTrailPoints() }
-                viewModelScope.launch { getTrailImages() }
-            },
-            onFailure = { error ->
-                _uiState.update {
+                is TrailInfoResult.Error -> _uiState.update {
                     it.copy(
                         isLoadingInfo = false,
-                        loadingInfoError = when (error) {
-                            TrailInfoError.NotFound -> UiText.Resource(R.string.trail_not_found)
-                            is TrailInfoError.Error -> {
-                                if (error.message != null) UiText.Dynamic(error.message)
-                                else UiText.Resource(R.string.could_not_get_trail_info)
-                            }
-                        }
+                        loadingInfoError = UiText.Resource(R.string.could_not_get_trail_info)
                     )
                 }
             }
-        )
+        }
     }
 
     /**
@@ -128,36 +134,31 @@ class TrailInfoViewModel(
     private fun getTrailPoints() {
         val id = trailId
         if (id == null) {
-            Log.e("TrailInfoViewModel", "getTrailInfo: trailId is null")
+            Log.e("TrailInfoViewModel", "getTrailPoints: trailId is null")
             return
         }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingPoints = true) } // loading
+            val response = async { firebaseContentRepository.getTrailPointsByTrailId(id) }.await()
 
-        _uiState.update { it.copy(isLoadingPoints = true) } // loading
-
-        firebaseContentRepository.getTrailPointsByTrailId(
-            id,
-            onSuccess = { trailPoints ->
-                _uiState.update { currentState ->
-                    updateCurrentTrail { it.copy(trailPointsList = trailPoints) }
+            when (response) {
+                is TrailPointsResult.Success -> _uiState.update { currentState ->
+                    updateCurrentTrail { it.copy(trailPointsList = response.points.toMutableList()) }
                     currentState.copy(
                         isLoadingPoints = false,
                         loadingPointsError = UiText.Empty
                     )
                 }
-            },
-            onFailure = { message ->
-                _uiState.update {
+
+                is TrailPointsResult.Error -> _uiState.update {
                     it.copy(
                         isLoadingPoints = false,
-                        loadingPointsError = if (message != null) {
-                            UiText.Dynamic(message)
-                        } else {
-                            UiText.Resource(R.string.could_not_get_trail_points)
-                        }
+                        loadingPointsError = if (response.error != null) UiText.Dynamic(response.error)
+                        else UiText.Resource(R.string.could_not_get_trail_points)
                     )
                 }
             }
-        )
+        }
     }
 
     /**
@@ -169,33 +170,28 @@ class TrailInfoViewModel(
             Log.e("TrailInfoViewModel", "getTrailImages: trailId is null")
             return
         }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingImages = true) } // loading
+            val response = async { firebaseContentRepository.getTrailImagesByTrailId(id) }.await()
 
-        _uiState.update { it.copy(isLoadingImages = true) } // loading
-
-        firebaseContentRepository.getTrailImagesByTrailId(
-            id,
-            onSuccess = { imagesList ->
-                _uiState.update {
+            when (response) {
+                is TrailImagesResult.Success -> _uiState.update {
                     it.copy(
-                        imagesUriList = imagesList,
+                        imagesUriList = response.images,
                         isLoadingImages = false,
                         loadingInfoError = UiText.Empty
                     )
                 }
-            },
-            onFailure = { message ->
-                _uiState.update {
+
+                is TrailImagesResult.Error -> _uiState.update {
                     it.copy(
                         isLoadingImages = false,
-                        loadingImagesError = if (message != null) {
-                            UiText.Dynamic(message)
-                        } else {
-                            UiText.Resource(R.string.could_not_get_trail_images)
-                        }
+                        loadingImagesError = if (response.error != null) UiText.Dynamic(response.error)
+                        else UiText.Resource(R.string.could_not_get_trail_images)
                     )
                 }
             }
-        )
+        }
     }
 
     /**
@@ -205,26 +201,23 @@ class TrailInfoViewModel(
         val id = trailId
         val trail = _uiState.value.trail
         if (id == null || trail == null) {
-            Log.e("TrailInfoViewModel", "getTrailInfo: trailId or trail is null")
+            Log.e("TrailInfoViewModel", "updateTrailInDatabase: trailId or trail is null")
             return
         }
 
-        val newData = mapOf(
-            "name" to trail.name,
-            "description" to trail.description,
-            "public" to trail.public
-        )
+        viewModelScope.launch {
+            val newData = mapOf(
+                "name" to trail.name,
+                "description" to trail.description,
+                "public" to trail.public
+            )
+            val result = async { firebaseContentRepository.updateTrailById(id, newData) }.await()
 
-        firebaseContentRepository.updateTrailById(
-            id,
-            newData,
-            onSuccess = {
-                showStatusBanner(StatusBannerType.Error, R.string.trail_has_been_updated)
-            },
-            onFailure = {
-                showStatusBanner(StatusBannerType.Error, it ?: R.string.could_not_update_trail)
+            when (result) {
+                TrailUpdateResult.Success -> showStatusBanner(StatusBannerType.Error, R.string.trail_has_been_updated)
+                is TrailUpdateResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_update_trail)
             }
-        )
+        }
     }
 
     /**
@@ -233,19 +226,18 @@ class TrailInfoViewModel(
     private fun deleteTrailFromDatabase() {
         val id = trailId
         if (id == null) {
-            Log.e("TrailInfoViewModel", "getTrailInfo: trailId is null")
+            Log.e("TrailInfoViewModel", "deleteTrailFromDatabase: trailId is null")
             return
         }
 
-        firebaseContentRepository.deleteTrailById(
-            id,
-            onSuccess = {
-                showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_deleted)
-            },
-            onFailure = {
-                showStatusBanner(StatusBannerType.Error, it ?: R.string.could_not_delete_trail)
+        viewModelScope.launch {
+            val result = async { firebaseContentRepository.deleteTrailById(id) }.await()
+
+            when (result) {
+                TrailDeleteResult.Success -> showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_deleted)
+                is TrailDeleteResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_delete_trail)
             }
-        )
+        }
     }
 
     /**

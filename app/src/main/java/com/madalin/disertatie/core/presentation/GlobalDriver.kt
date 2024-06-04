@@ -3,16 +3,20 @@ package com.madalin.disertatie.core.presentation
 import android.util.Log
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.GlobalAction
-import com.madalin.disertatie.core.domain.result.UserFailure
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
+import com.madalin.disertatie.core.domain.result.UserResult
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -22,6 +26,7 @@ class GlobalDriver(
 ) {
     @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
     private val dispatcher = newSingleThreadContext("AppContext")
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     private val _state = MutableStateFlow(GlobalState()) // the overall state of the application
     val state = _state.asSharedFlow() // shared state to allow components to observe the state and react to state changes
@@ -65,36 +70,44 @@ class GlobalDriver(
     }
 
     /**
-     * Starts listening for user data changes and updates user [_state].
+     * Starts listening for user data changes and updates the user [_state].
      */
     private fun startListeningForUserData() {
-        userRepository.startListeningForUserData(
-            onSuccess = { fetchedUserData ->
-                Log.d("AppStateDriver", "Obtained new user data: $fetchedUserData")
-                _state.update { it.copy(currentUser = fetchedUserData) }
-            },
-            onFailure = { failureType ->
-                Log.e("AppStateDriver", "Failed to obtain new user data")
-                _state.update { currentState ->
-                    currentState.copy(
-                        isStatusBannerVisible = true,
-                        statusBannerData = StatusBannerData(
-                            StatusBannerType.Error,
-                            determineUserDataFetchingFailureMessage(failureType)
-                        )
-                    )
-                }
+        scope.launch {
+            val result = launch {
+                userRepository.observerUserData()
+                    .collect { result ->
+                        when (result) {
+                            is UserResult.Success -> {
+                                Log.d("GlobalDriver", "Obtained new user data: ${result.user}")
+                                _state.update { it.copy(currentUser = result.user) }
+                            }
+
+                            UserResult.NoUserId, UserResult.DataFetchingError, UserResult.UserDataNotFound ->
+                                _state.update {
+                                    it.copy(
+                                        isStatusBannerVisible = true,
+                                        statusBannerData = StatusBannerData(
+                                            StatusBannerType.Error,
+                                            determineUserDataFetchingFailureMessage(result)
+                                        )
+                                    )
+                                }
+                        }
+                    }
             }
-        )
+            result.join() // keeps the coroutine running to listen for updates
+        }
     }
 
     /**
      * Determines the [failureType] and returns the specific [UiText] message.
      */
-    private fun determineUserDataFetchingFailureMessage(failureType: UserFailure) = when (failureType) {
-        UserFailure.DataFetchingError -> UiText.Resource(R.string.data_fetching_error)
-        UserFailure.NoUserId -> UiText.Resource(R.string.could_not_get_the_user_id)
-        UserFailure.UserDataNotFound -> UiText.Resource(R.string.user_data_not_found)
+    private fun determineUserDataFetchingFailureMessage(failureType: UserResult) = when (failureType) {
+        is UserResult.Success -> UiText.Empty
+        UserResult.DataFetchingError -> UiText.Resource(R.string.data_fetching_error)
+        UserResult.NoUserId -> UiText.Resource(R.string.could_not_get_the_user_id)
+        UserResult.UserDataNotFound -> UiText.Resource(R.string.user_data_not_found)
     }
 
     /**

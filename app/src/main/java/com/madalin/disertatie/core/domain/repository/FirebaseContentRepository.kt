@@ -1,8 +1,13 @@
 package com.madalin.disertatie.core.domain.repository
 
 import com.madalin.disertatie.core.domain.model.Trail
-import com.madalin.disertatie.core.domain.model.TrailPoint
-import com.madalin.disertatie.core.domain.result.TrailInfoError
+import com.madalin.disertatie.core.domain.result.TrailDeleteResult
+import com.madalin.disertatie.core.domain.result.TrailImagesResult
+import com.madalin.disertatie.core.domain.result.TrailInfoResult
+import com.madalin.disertatie.core.domain.result.TrailPointsResult
+import com.madalin.disertatie.core.domain.result.TrailUpdateResult
+import com.madalin.disertatie.core.domain.result.TrailsListResult
+import kotlinx.coroutines.flow.Flow
 
 interface FirebaseContentRepository {
     /**
@@ -17,37 +22,33 @@ interface FirebaseContentRepository {
     )
 
     /**
-     * Retrieves the trails belonging to this [userId].
-     * @param onSuccess Invoked when the operation succeeds with the trails list as parameter.
-     * @param onFailure Invoked when the operation fails.
+     * Retrieves the trails belonging to the user with the given [userId] as a [TrailsListResult]
+     * and listens for changes in the database.
      */
-    fun getTrailsByUserId(
-        userId: String,
-        onSuccess: (trails: List<Trail>) -> Unit, onFailure: (message: String?) -> Unit
-    )
+    suspend fun observeTrailsByUserId(userId: String): Flow<TrailsListResult>
 
-    fun getTrailInfoById(
-        trailId: String,
-        onSuccess: (trail: Trail) -> Unit, onFailure: (error: TrailInfoError) -> Unit
-    )
+    /**
+     * Retrieves the trail with the given [trailId] as a [TrailInfoResult].
+     */
+    suspend fun getTrailInfoById(trailId: String): TrailInfoResult
 
-    fun getTrailPointsByTrailId(
-        trailId: String,
-        onSuccess: (trailPoints: MutableList<TrailPoint>) -> Unit, onFailure: (message: String?) -> Unit
-    )
+    /**
+     * Retrieves the trail points belonging to the trail with the given [trailId] as a [TrailPointsResult].
+     */
+    suspend fun getTrailPointsByTrailId(trailId: String): TrailPointsResult
 
-    fun getTrailImagesByTrailId(
-        trailId: String,
-        onSuccess: (images: List<String>) -> Unit, onFailure: (message: String?) -> Unit
-    )
+    /**
+     * Retrieves the trail images belonging to the trail with the given [trailId] as a [TrailImagesResult].
+     */
+    suspend fun getTrailImagesByTrailId(trailId: String): TrailImagesResult
 
-    fun updateTrailById(
-        trailId: String, newData: Map<String, Any>,
-        onSuccess: () -> Unit, onFailure: (message: String?) -> Unit
-    )
+    /**
+     * Updates the trail with the given [trailId] with the given [newData].
+     */
+    suspend fun updateTrailById(trailId: String, newData: Map<String, Any>): TrailUpdateResult
 
-    fun deleteTrailById(
-        trailId: String,
-        onSuccess: () -> Unit, onFailure: (message: String?) -> Unit
-    )
+    /**
+     * Deletes the trail with the given [trailId].
+     */
+    suspend fun deleteTrailById(trailId: String): TrailDeleteResult
 }

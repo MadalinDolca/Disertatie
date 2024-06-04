@@ -10,8 +10,8 @@ import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
 import com.madalin.disertatie.auth.presentation.login.LoginViewModel
 import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetViewModel
 import com.madalin.disertatie.auth.presentation.register.RegisterViewModel
-import com.madalin.disertatie.core.data.FirebaseContentRepositoryImpl
-import com.madalin.disertatie.core.data.FirebaseUserRepositoryImpl
+import com.madalin.disertatie.core.data.repository.FirebaseContentRepositoryImpl
+import com.madalin.disertatie.core.data.repository.FirebaseUserRepositoryImpl
 import com.madalin.disertatie.core.domain.SuggestionGenerator
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
@@ -36,7 +36,7 @@ val appModule = module {
 
     // firebase repositories
     single<FirebaseAuthRepository> { FirebaseAuthRepositoryImpl() } // if FirebaseAuthRepository is used as a parameter
-    single<FirebaseUserRepository> { FirebaseUserRepositoryImpl() }
+    single<FirebaseUserRepository> { FirebaseUserRepositoryImpl(get(), get()) }
     single<FirebaseContentRepository> { FirebaseContentRepositoryImpl(get(), get(), get()) }
 
     // other repositories

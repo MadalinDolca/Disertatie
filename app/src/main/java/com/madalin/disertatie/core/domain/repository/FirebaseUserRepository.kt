@@ -1,8 +1,8 @@
 package com.madalin.disertatie.core.domain.repository
 
 import com.google.firebase.ktx.Firebase
-import com.madalin.disertatie.core.domain.model.User
-import com.madalin.disertatie.core.domain.result.UserFailure
+import com.madalin.disertatie.core.domain.result.UserResult
+import kotlinx.coroutines.flow.Flow
 
 interface FirebaseUserRepository {
     /**
@@ -17,11 +17,9 @@ interface FirebaseUserRepository {
     fun getCurrentUserId(): String?
 
     /**
-     * Obtains the current user data from [Firestore][Firebase.firestore] and starts listening for updates.
-     * @param onSuccess function invoked when data fetching succeeds with the data inside [User]
-     * @param onFailure function invoked when data fetching fails with [UserFailure] as the error type
+     * Obtains the current user data from Firestore and starts listening for updates.
      */
-    fun startListeningForUserData(onSuccess: (User) -> Unit, onFailure: (UserFailure) -> Unit)
+    suspend fun observerUserData(): Flow<UserResult>
 
     /**
      * Signs out the currently authenticated user.
