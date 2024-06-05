@@ -57,7 +57,7 @@ fun NavHostController.goBackWithImage(image: Bitmap) {
  * Navigates to the trail info screen that has the given [trailId].
  */
 fun NavHostController.navigateToTrailInfoWithTrailId(trailId: String) {
-    this.navigate(TrailInfoDest.routeBuilder(trailId))
+    this.navigateSingleTopTo(TrailInfoDest.routeBuilder(trailId))
 }
 
 /**

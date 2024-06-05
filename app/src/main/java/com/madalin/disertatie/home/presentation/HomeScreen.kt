@@ -28,7 +28,7 @@ import com.madalin.disertatie.core.presentation.navigation.DiscoverDest
 import com.madalin.disertatie.core.presentation.navigation.HomeDestination
 import com.madalin.disertatie.core.presentation.navigation.MapDest
 import com.madalin.disertatie.core.presentation.navigation.ProfileDest
-import com.madalin.disertatie.core.presentation.navigation.navigateSingleTopTo
+import com.madalin.disertatie.core.presentation.navigation.navigateSingleTopToIfDifferent
 import com.madalin.disertatie.core.presentation.navigation.navigateToMapWithTrailId
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.home.presentation.navigation.HomeNavHost
@@ -53,6 +53,7 @@ fun HomeScreen(
             onNavigateToTrailInfo = onNavigateToTrailInfoWithTrailId
         )
 
+        // TODO invalidate trail ID argument one screen resume
         // if this screen receives a trail ID, it will launch the map screen
         LaunchedEffect(key1 = trailIdToShowOnMap) {
             if (trailIdToShowOnMap != null) {
@@ -106,7 +107,7 @@ private fun RowScope.AddItem(
 ) {
     NavigationBarItem(
         selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true,
-        onClick = { navController.navigateSingleTopTo(destination.route) },
+        onClick = { navController.navigateSingleTopToIfDifferent(destination.route) },
         icon = { Icon(imageVector = destination.icon, contentDescription = destination.title.asString()) },
         modifier = modifier,
         label = { Text(text = destination.title.asString()) }

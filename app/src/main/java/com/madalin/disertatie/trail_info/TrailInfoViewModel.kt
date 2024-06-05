@@ -214,7 +214,7 @@ class TrailInfoViewModel(
             val result = async { firebaseContentRepository.updateTrailById(id, newData) }.await()
 
             when (result) {
-                TrailUpdateResult.Success -> showStatusBanner(StatusBannerType.Error, R.string.trail_has_been_updated)
+                TrailUpdateResult.Success -> showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_updated)
                 is TrailUpdateResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_update_trail)
             }
         }

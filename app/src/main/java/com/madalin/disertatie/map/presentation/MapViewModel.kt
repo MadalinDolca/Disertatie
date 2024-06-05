@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.SuggestionGenerator
@@ -82,7 +83,7 @@ class MapViewModel(
 
     init {
         if (launchedTrailId != null) {
-            viewLaunchedTrail()
+            showLaunchedTrail()
         }
     }
 
@@ -114,6 +115,8 @@ class MapViewModel(
     private fun handleMapAction(action: MapAction) {
         when (action) {
             MapAction.MoveCameraToUserLocation -> moveCameraToUserLocation()
+            is MapAction.MoveCameraToLaunchedTrailStartingPoint -> moveCameraToLaunchedTrailStartingPoint()
+            is MapAction.MoveCameraToLaunchedTrailEndingPoint -> moveCameraToLaunchedTrailEndingPoint()
         }
     }
 
@@ -173,6 +176,7 @@ class MapViewModel(
             }
 
             TrailAction.HideLoadingLaunchedTrailDialog -> hideLoadingLaunchedTrailDialog()
+            TrailAction.CloseLaunchedTrail -> closeLaunchedTrail()
         }
     }
 
@@ -393,6 +397,7 @@ class MapViewModel(
      * Saves the current trail into the database and its images to cloud storage and hides the dialog.
      */
     private fun saveTrail() {
+        // TODO add info like starting, middle and ending point, trail length, etc.
         val currentTrail = _uiState.value.currentTrail
         if (currentTrail == null) {
             showStatusBanner(StatusBannerType.Error, R.string.can_not_save_a_non_existent_trail)
@@ -504,7 +509,7 @@ class MapViewModel(
     }
 
     /**
-     * Sets the camera dragged state to `false` and moves the camera to the user location.
+     * Moves the camera to the current user location.
      */
     private fun moveCameraToUserLocation() {
         _uiState.value.currentUserLocation?.let { userLocation ->
@@ -517,6 +522,21 @@ class MapViewModel(
                 } catch (e: Exception) {
                     Log.d("MapViewModel", "moveCameraToUserLocation: ${e.message}")
                 }
+            }
+        }
+    }
+
+    /**
+     * Moves the camera to the given [coordinates].
+     */
+    private fun moveCameraToCoordinates(coordinates: LatLng) {
+        viewModelScope.launch {
+            try {
+                _uiState.value.cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(coordinates, ZOOM_LEVEL)
+                )
+            } catch (e: Exception) {
+                Log.d("MapViewModel", "moveCameraToCoordinates: ${e.message}")
             }
         }
     }
@@ -796,7 +816,16 @@ class MapViewModel(
         _uiState.update { it.copy(isLoadingSuggestion = isLoading) }
     }
 
-    private fun viewLaunchedTrail() {
+    /**
+     * Shows the launched trail on the map if no trail creation is in progress and if the launched
+     * trail exists.
+     */
+    private fun showLaunchedTrail() {
+        /*if (_uiState.value.isCreatingTrail) {
+            showStatusBanner(StatusBannerType.Info, R.string.stop_trail_creation_before_launching_a_trail)
+            return
+        }*/
+
         val trailId = launchedTrailId
         if (trailId == null) {
             showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
@@ -810,7 +839,14 @@ class MapViewModel(
             when (result) {
                 is TrailResult.Success -> {
                     showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_loaded)
-                    _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
+                    _uiState.update {
+                        it.copy(
+                            isLoadingLaunchedTrail = false,
+                            isLaunchedTrail = true,
+                            currentTrail = result.trail
+                        )
+                    }
+                    moveCameraToCoordinates(result.trail.trailPointsList.first().toLatLng())
                 }
 
                 TrailResult.TrailNotFound -> {
@@ -826,7 +862,47 @@ class MapViewModel(
         }
     }
 
+    private fun closeLaunchedTrail() {
+        _uiState.update {
+            it.copy(
+                isLaunchedTrail = false,
+                currentTrail = null,
+            )
+        }
+        moveCameraToUserLocation()
+        savedStateHandle[MapDest.trailIdArg] = null
+    }
+
+    /**
+     * Hides the loading launched trail dialog.
+     */
     private fun hideLoadingLaunchedTrailDialog() {
         _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
+    }
+
+    /**
+     * Moves the camera to the launched trail starting point if it exists.
+     */
+    private fun moveCameraToLaunchedTrailStartingPoint() {
+        val trail = _uiState.value.currentTrail
+        if (trail == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_move_camera_to_a_non_existent_trail)
+            return
+        }
+
+        moveCameraToCoordinates(trail.trailPointsList.first().toLatLng())
+    }
+
+    /**
+     * Moves the camera to the launched trail ending point if it exists.
+     */
+    private fun moveCameraToLaunchedTrailEndingPoint() {
+        val trail = _uiState.value.currentTrail
+        if (trail == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.can_not_move_camera_to_a_non_existent_trail)
+            return
+        }
+
+        moveCameraToCoordinates(trail.trailPointsList.last().toLatLng())
     }
 }

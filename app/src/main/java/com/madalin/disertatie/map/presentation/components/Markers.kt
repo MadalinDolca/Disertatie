@@ -3,9 +3,12 @@ package com.madalin.disertatie.map.presentation.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -54,37 +57,66 @@ fun UserMarker(coordinates: LatLng) {
 }
 
 /**
- * Marker used to indicate the starting point of a trail on the map alongside with [trail] information
- * if provided.
+ * Indicated whether this is the starting or the ending point of a trail.
+ */
+enum class ExtremePointType {
+    START, END
+}
+
+/**
+ * Marker used to indicate the starting or the ending point of a trail on the map alongside with
+ * [trail] information if provided.
  */
 @Composable
-fun TrailStartMarker(
+fun TrailExtremePointMarker(
+    type: ExtremePointType,
     coordinates: LatLng,
-    trail: Trail? = null
+    trail: Trail?
 ) {
+    val icon = bitmapDescriptor(
+        context = LocalContext.current,
+        vectorResId = when (type) {
+            ExtremePointType.START -> R.drawable.dot
+            ExtremePointType.END -> R.drawable.finish_flag
+        }
+    )
+
+    val title = when (type) {
+        ExtremePointType.START -> stringResource(R.string.starting_point)
+        ExtremePointType.END -> stringResource(R.string.ending_point)
+    }
+
     MarkerInfoWindow(
         state = MarkerState(position = coordinates),
-        icon = bitmapDescriptor(
-            context = LocalContext.current,
-            vectorResId = R.drawable.dot
-        )
+        icon = icon
     ) {
         Card(modifier = Modifier.padding(bottom = Dimens.separator)) {
             Column(
                 modifier = Modifier.padding(Dimens.container),
-                verticalArrangement = Arrangement.spacedBy(Dimens.separator, Alignment.CenterVertically),
-                horizontalAlignment = Alignment.CenterHorizontally
+                verticalArrangement = Arrangement.spacedBy(Dimens.separator, Alignment.CenterVertically)
             ) {
-                Text(text = stringResource(R.string.this_is_the_starting_point))
+                Text(
+                    text = title,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
 
                 if (trail != null) {
-                    Text(text = stringResource(R.string.trail_name) + ": " + trail.name)
-                    Text(text = stringResource(R.string.length) + ": " + trail.length)
+                    Text(
+                        text = trail.name,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Spacer(modifier = Modifier.height(Dimens.separator))
+
+                    Text(
+                        text = trail.description,
+                        maxLines = 5
+                    )
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun TrailPointInfoMarker(

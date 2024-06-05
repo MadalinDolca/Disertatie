@@ -101,7 +101,7 @@ fun TrailInfoScreen(
             onClick = { onNavigateToHomeWithTrailId(it) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = Dimens.container)
+                .padding(end = Dimens.container, bottom = Dimens.container)
                 .navigationBarsPadding()
         )
     }
@@ -207,6 +207,7 @@ private fun EditableInfo(
                     text = stringResource(R.string.description),
                     style = MaterialTheme.typography.titleLarge
                 )
+                // TODO support markdown
                 InfoField(
                     text = trail.description,
                     placeholder = { Text(text = stringResource(R.string.add_trail_description)) },
@@ -358,7 +359,7 @@ private fun InfoField(
 }
 
 @Composable
-fun LaunchTrailFAB(
+private fun LaunchTrailFAB(
     trail: Trail?,
     onClick: (trailId: String) -> Unit,
     modifier: Modifier = Modifier

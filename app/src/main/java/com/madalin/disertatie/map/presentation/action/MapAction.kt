@@ -7,4 +7,6 @@ import com.madalin.disertatie.core.domain.action.Action
  */
 sealed class MapAction : Action {
     data object MoveCameraToUserLocation : MapAction()
+    data object MoveCameraToLaunchedTrailStartingPoint : MapAction()
+    data object MoveCameraToLaunchedTrailEndingPoint : MapAction()
 }

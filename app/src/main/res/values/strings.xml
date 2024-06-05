@@ -63,7 +63,7 @@
     <string name="timestamp">Timestamp</string>
     <string name="tap_to_obtain_weather_info">Tap to obtain weather info</string>
     <string name="no_trail_point_has_been_registered_yet">No trail point has been registered yet</string>
-    <string name="this_is_the_starting_point">This is the starting point</string>
+    <string name="starting_point">Starting point</string>
     <string name="trail_name">Trail name</string>
     <string name="length">Length</string>
     <string name="save">Save</string>
@@ -153,4 +153,7 @@
     <string name="no_trail_id_has_been_provided">No trail ID has been provided</string>
     <string name="could_not_get_trail">Could not get trail</string>
     <string name="trail_has_been_loaded">Trail has been loaded</string>
+    <string name="can_not_move_camera_to_a_non_existent_trail">Can not move camera to a non existent trail</string>
+    <string name="ending_point">Ending point</string>
+    <string name="stop_trail_creation_before_launching_a_trail">Stop trail creation before launching a trail</string>
 </resources>
