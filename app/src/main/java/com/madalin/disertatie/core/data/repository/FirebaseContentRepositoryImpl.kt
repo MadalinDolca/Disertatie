@@ -142,15 +142,17 @@ class FirebaseContentRepositoryImpl(
         val storageRef = storage.getReference(StoragePath.TRAIL_IMAGES).child(trailId)
 
         try {
-            // retrieves trail info and points without images
+            // retrieves trail info; if trail is null it cancels the next requests.
             val trail = trailDocRef.get().await().toObject<Trail>() ?: return TrailResult.TrailNotFound
-            val trailPoints = trailPointsColRef.get().await().toObjects<TrailPoint>()
 
-            // retrieves trail images
+            // executes trail points and image URLs queries
+            val trailPointsTask = trailPointsColRef.get()
+            val storageTask = storageRef.listAll()
+
+            // retrieves image URLs and trail points
             val images = mutableListOf<String>()
-            storageRef.listAll().await().items.forEach {
-                images.add(it.downloadUrl.await().toString())
-            }
+            storageTask.await().items.forEach { images.add(it.downloadUrl.await().toString()) }
+            val trailPoints = trailPointsTask.await().toObjects<TrailPoint>()
 
             // maps the trail points and images
             mapTrailPointsAndImageUrls(trailPoints, images)
