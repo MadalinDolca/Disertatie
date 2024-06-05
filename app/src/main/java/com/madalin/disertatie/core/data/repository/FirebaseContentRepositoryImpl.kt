@@ -4,6 +4,7 @@ import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObject
 import com.google.firebase.firestore.toObjects
 import com.google.firebase.storage.FirebaseStorage
@@ -146,7 +147,7 @@ class FirebaseContentRepositoryImpl(
             val trail = trailDocRef.get().await().toObject<Trail>() ?: return TrailResult.TrailNotFound
 
             // executes trail points and image URLs queries
-            val trailPointsTask = trailPointsColRef.get()
+            val trailPointsTask = trailPointsColRef.orderBy("timestamp", Query.Direction.ASCENDING).get()
             val storageTask = storageRef.listAll()
 
             // retrieves image URLs and trail points
