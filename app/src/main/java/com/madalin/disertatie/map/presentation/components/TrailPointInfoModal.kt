@@ -66,7 +66,6 @@ import com.madalin.disertatie.core.domain.model.TrailImage
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.model.Weather
 import com.madalin.disertatie.core.presentation.util.Dimens
-import com.madalin.disertatie.map.presentation.SuggestionDialogState
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import com.madalin.disertatie.map.presentation.action.TrailAction
 import com.madalin.disertatie.map.presentation.util.CameraPermissionHandler

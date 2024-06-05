@@ -2,7 +2,7 @@ package com.madalin.disertatie.map.domain.util
 
 import com.madalin.disertatie.core.domain.extension.asTime
 import com.madalin.disertatie.core.domain.model.TrailPoint
-import com.madalin.disertatie.map.presentation.SuggestionDialogState
+import com.madalin.disertatie.map.presentation.components.SuggestionDialogState
 
 /**
  * Builds and returns a prompt to be used in a suggestion generation based on the settings made

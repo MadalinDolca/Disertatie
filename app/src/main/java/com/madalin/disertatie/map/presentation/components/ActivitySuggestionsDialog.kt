@@ -26,9 +26,18 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.Action
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.presentation.util.Dimens
-import com.madalin.disertatie.map.presentation.SuggestionDialogState
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import dev.jeziellago.compose.markdowntext.MarkdownText
+
+data class SuggestionDialogState(
+    val isImagesChecked: Boolean = false,
+    val isNoteChecked: Boolean = false,
+    val isWeatherChecked: Boolean = false,
+    val isWarningChecked: Boolean = false,
+    val isTimeChecked: Boolean = false,
+    val additionalInfo: String = "",
+    val response: String = ""
+)
 
 @Composable
 fun ActivitySuggestionsDialog(

@@ -47,6 +47,7 @@ import com.madalin.disertatie.map.presentation.action.LocationAction
 import com.madalin.disertatie.map.presentation.action.MapAction
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import com.madalin.disertatie.map.presentation.action.TrailAction
+import com.madalin.disertatie.map.presentation.components.SuggestionDialogState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
