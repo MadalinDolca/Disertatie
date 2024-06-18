@@ -156,4 +156,6 @@
     <string name="can_not_move_camera_to_a_non_existent_trail">Can not move camera to a non existent trail</string>
     <string name="ending_point">Ending point</string>
     <string name="stop_trail_creation_before_launching_a_trail">Stop trail creation before launching a trail</string>
+    <string name="it_took_x_to_create_this_trail">It took %s to create this trail</string>
+    <string name="it_has_a_length_of">It has a length of</string>
 </resources>

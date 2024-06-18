@@ -13,9 +13,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.RocketLaunch
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Straighten
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,12 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.extension.asDateAndTime
+import com.madalin.disertatie.core.domain.extension.asDuration
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.presentation.components.ScreenTopBar
 import com.madalin.disertatie.core.presentation.util.Dimens
@@ -258,10 +265,39 @@ private fun ConstInfo(
         } else {
             // dates
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = stringResource(R.string.published_at) + ": " + trail.createdAt?.time?.asDateAndTime())
-                Text(text = stringResource(R.string.updated_at) + ": " + trail.updatedAt?.time?.asDateAndTime())
+                StaticInfoRow(
+                    icon = Icons.Rounded.CalendarToday,
+                    text = stringResource(R.string.published_at) + " " + trail.createdAt?.time?.asDateAndTime()
+                )
+                StaticInfoRow(
+                    icon = Icons.Rounded.CalendarMonth,
+                    text = stringResource(R.string.updated_at) + " " + trail.updatedAt?.time?.asDateAndTime()
+                )
+                trail.duration?.let {
+                    StaticInfoRow(
+                        icon = Icons.Rounded.Schedule,
+                        text = stringResource(R.string.it_took_x_to_create_this_trail, it.asDuration())
+                    )
+                }
+                StaticInfoRow(
+                    icon = Icons.Rounded.Straighten,
+                    text = stringResource(R.string.it_has_a_length_of) + " " + trail.length + " m"
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun StaticInfoRow(
+    icon: ImageVector,
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier) {
+        Icon(imageVector = icon, contentDescription = null)
+        Spacer(modifier = Modifier.width(Dimens.separator))
+        Text(text = text)
     }
 }
 

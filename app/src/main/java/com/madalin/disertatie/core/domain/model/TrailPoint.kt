@@ -25,6 +25,11 @@ data class TrailPoint(
     fun toLatLng() = LatLng(this.latitude, this.longitude)
 
     /**
+     * Returns the latitude and longitude of this [TrailPoint] as a [Coordinates].
+     */
+    fun toCoordinates() = Coordinates(this.latitude, this.longitude)
+
+    /**
      * Extracts the images of this trail point and returns it as a list of [Bitmap]s.
      */
     fun extractImages() = this.imagesList.map { it.image }
