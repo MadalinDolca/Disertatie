@@ -103,6 +103,7 @@ class MapViewModel(
     private fun GlobalState.reduce() {
         _uiState.update { currentState ->
             currentState.copy(
+                currentUser = this.currentUser,
                 launchedTrailId = this.launchedTrailId
             )
         }

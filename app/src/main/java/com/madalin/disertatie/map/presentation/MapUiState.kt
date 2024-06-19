@@ -6,10 +6,12 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
+import com.madalin.disertatie.core.domain.model.User
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.map.presentation.components.SuggestionDialogState
 
 data class MapUiState(
+    val currentUser: User? = null,
     val isLocationAvailable: Boolean = true,
 
     // trail creation

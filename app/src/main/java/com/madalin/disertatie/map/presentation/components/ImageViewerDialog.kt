@@ -45,6 +45,7 @@ import com.madalin.disertatie.map.presentation.util.getLocationTypeString
 @Composable
 fun ImageViewerDialog(
     isVisible: Boolean,
+    isOwner: Boolean,
     trailImage: TrailImage,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
@@ -73,6 +74,7 @@ fun ImageViewerDialog(
                             modifier = Modifier.align(Alignment.Center)
                         )
                         ButtonsRow(
+                            isOwner = isOwner,
                             onDelete = { onDelete() },
                             onDismiss = { onDismiss() },
                             modifier = Modifier
@@ -177,6 +179,7 @@ private fun ImageViewer(
 
 @Composable
 private fun ButtonsRow(
+    isOwner: Boolean,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
@@ -185,15 +188,17 @@ private fun ButtonsRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        // delete button
-        FilledTonalButton(
-            onClick = { onDelete() },
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            )
-        ) {
-            Text(text = stringResource(R.string.delete))
+        if (isOwner) {
+            // delete button
+            FilledTonalButton(
+                onClick = { onDelete() },
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Text(text = stringResource(R.string.delete))
+            }
         }
 
         // close button

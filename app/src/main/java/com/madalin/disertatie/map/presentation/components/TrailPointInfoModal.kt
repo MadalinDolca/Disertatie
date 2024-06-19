@@ -79,6 +79,7 @@ import kotlinx.coroutines.launch
 fun TrailPointInfoModal(
     isVisible: Boolean,
     sheetState: SheetState,
+    isOwner: Boolean,
     trailPoint: TrailPoint,
     suggestionDialogState: SuggestionDialogState,
     isLoadingWeather: Boolean,
@@ -154,6 +155,7 @@ fun TrailPointInfoModal(
                 GeographicalData(trailPoint = trailPoint)
 
                 ButtonsRow(
+                    isOwner = isOwner,
                     sheetState = sheetState,
                     onAction = onAction,
                 )
@@ -164,6 +166,7 @@ fun TrailPointInfoModal(
     if (selectedImage != null) {
         ImageViewerDialog(
             isVisible = isImageViewerDialogVisible,
+            isOwner = isOwner,
             trailImage = selectedImage!!,
             onDelete = {
                 onAction(TrailAction.RemoveStpImage(selectedImage!!))
@@ -412,6 +415,7 @@ private fun GeographicalData(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ButtonsRow(
+    isOwner: Boolean,
     sheetState: SheetState,
     onAction: (Action) -> Unit,
     modifier: Modifier = Modifier
@@ -424,15 +428,17 @@ private fun ButtonsRow(
             .navigationBarsPadding(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        // clear button
-        FilledTonalButton(
-            onClick = { onAction(TrailAction.ClearStpData) },
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            )
-        ) {
-            Text(text = stringResource(R.string.clear))
+        if (isOwner) {
+            // clear button
+            FilledTonalButton(
+                onClick = { onAction(TrailAction.ClearStpData) },
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Text(text = stringResource(R.string.clear))
+            }
         }
 
         // cancel button
@@ -444,17 +450,19 @@ private fun ButtonsRow(
             Text(text = stringResource(R.string.cancel))
         }
 
-        // save button
-        Button(onClick = {
-            onAction(TrailAction.UpdateTrailPoint(
-                { // success
-                    coroutineScope.launch { sheetState.hide() }
-                        .invokeOnCompletion { if (!sheetState.isVisible) onAction(TrailAction.HideTrailPointInfoModal) }
-                },
-                {} // failure
-            ))
-        }) {
-            Text(text = stringResource(R.string.save))
+        if (isOwner) {
+            // save button
+            Button(onClick = {
+                onAction(TrailAction.UpdateTrailPoint(
+                    { // success
+                        coroutineScope.launch { sheetState.hide() }
+                            .invokeOnCompletion { if (!sheetState.isVisible) onAction(TrailAction.HideTrailPointInfoModal) }
+                    },
+                    {} // failure
+                ))
+            }) {
+                Text(text = stringResource(R.string.save))
+            }
         }
     }
 }
