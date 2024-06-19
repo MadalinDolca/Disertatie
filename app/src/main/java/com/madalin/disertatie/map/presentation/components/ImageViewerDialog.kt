@@ -1,6 +1,5 @@
 package com.madalin.disertatie.map.presentation.components
 
-import android.graphics.Bitmap
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,9 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
-import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.domain.model.TrailImage
+import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.presentation.util.getLocationTypeString
 
 @Composable
@@ -55,7 +56,10 @@ fun ImageViewerDialog(
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Column(modifier = modifier.padding(Dimens.container)) {
-                ClassificationInfo(trailImage = trailImage)
+                // shows the classification info if the image is not obtained from the backend
+                if (trailImage.imageUrl.isEmpty()) {
+                    ClassificationInfo(trailImage = trailImage)
+                }
 
                 Card {
                     BoxWithConstraints(
@@ -64,7 +68,7 @@ fun ImageViewerDialog(
                             .aspectRatio((trailImage.image.width.toFloat() / trailImage.image.height.toFloat()))
                     ) {
                         ImageViewer(
-                            image = trailImage.image,
+                            trailImage = trailImage,
                             constraints = this@BoxWithConstraints.constraints,
                             modifier = Modifier.align(Alignment.Center)
                         )
@@ -119,7 +123,7 @@ private fun ClassificationInfo(
 
 @Composable
 private fun ImageViewer(
-    image: Bitmap,
+    trailImage: TrailImage,
     constraints: Constraints,
     modifier: Modifier = Modifier
 ) {
@@ -145,19 +149,30 @@ private fun ImageViewer(
         )
     }
 
-    Image(
-        bitmap = image.asImageBitmap(),
-        contentDescription = null,
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                //rotationZ = rotation
-                translationX = offset.x
-                translationY = offset.y
-            }
-            .transformable(transformableState)
-    )
+    val transformableModifier = modifier
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            //rotationZ = rotation
+            translationX = offset.x
+            translationY = offset.y
+        }
+        .transformable(transformableState)
+
+    if (trailImage.imageUrl.isNotEmpty()) {
+        SubcomposeAsyncImage(
+            model = trailImage.imageUrl,
+            contentDescription = null,
+            loading = { CircularProgressIndicator() },
+            modifier = transformableModifier
+        )
+    } else {
+        Image(
+            bitmap = trailImage.image.asImageBitmap(),
+            contentDescription = null,
+            modifier = transformableModifier
+        )
+    }
 }
 
 @Composable

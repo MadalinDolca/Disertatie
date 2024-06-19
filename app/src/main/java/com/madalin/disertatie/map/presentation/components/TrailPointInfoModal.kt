@@ -222,18 +222,40 @@ private fun ImagesRow(
         // image cards
         trailImages.forEach { trailImage ->
             key(trailImage.hashCode()) {
-                Card(
+                ImageCard(
+                    trailImage = trailImage,
                     onClick = { onImageClick(trailImage) },
-                    modifier = Modifier.size(80.dp)
-                ) {
-                    Image(
-                        bitmap = trailImage.image.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun ImageCard(
+    trailImage: TrailImage,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = { onClick() },
+        modifier = modifier.size(80.dp)
+    ) {
+        if (trailImage.imageUrl.isNotEmpty()) {
+            SubcomposeAsyncImage(
+                model = trailImage.imageUrl,
+                contentDescription = null,
+                loading = { CircularProgressIndicator() },
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Image(
+                bitmap = trailImage.image.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
         }
     }
 }
