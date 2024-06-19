@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,17 +30,18 @@ import com.madalin.disertatie.core.presentation.navigation.HomeDestination
 import com.madalin.disertatie.core.presentation.navigation.MapDest
 import com.madalin.disertatie.core.presentation.navigation.ProfileDest
 import com.madalin.disertatie.core.presentation.navigation.navigateSingleTopToIfDifferent
-import com.madalin.disertatie.core.presentation.navigation.navigateToMapWithTrailId
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.home.presentation.navigation.HomeNavHost
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
-    trailIdToShowOnMap: String? = null,
+    viewModel: HomeViewModel = koinViewModel(),
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
     onNavigateToTrailInfoWithTrailId: (String) -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val navController = rememberNavController()
 
     Scaffold(
@@ -53,11 +55,10 @@ fun HomeScreen(
             onNavigateToTrailInfo = onNavigateToTrailInfoWithTrailId
         )
 
-        // TODO invalidate trail ID argument one screen resume
-        // if this screen receives a trail ID, it will launch the map screen
-        LaunchedEffect(key1 = trailIdToShowOnMap) {
-            if (trailIdToShowOnMap != null) {
-                navController.navigateToMapWithTrailId(trailIdToShowOnMap)
+        // if a trail ID has been set, it will launch the map screen
+        LaunchedEffect(key1 = uiState.launchedTrailId) {
+            if (uiState.launchedTrailId != null) {
+                navController.navigateSingleTopToIfDifferent(MapDest.route)
             }
         }
     }

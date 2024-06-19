@@ -17,6 +17,7 @@ import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
+import com.madalin.disertatie.home.presentation.HomeViewModel
 import com.madalin.disertatie.map.data.repository.WeatherRepositoryImpl
 import com.madalin.disertatie.map.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.presentation.MapViewModel
@@ -52,7 +53,8 @@ val viewModelModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
     viewModel { PasswordResetViewModel(get()) }
-    viewModel { (savedStateHandle: SavedStateHandle) -> MapViewModel(get(), get(), get(), get(), get(), savedStateHandle) }
+    viewModel { HomeViewModel(get()) }
+    viewModel { MapViewModel(get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { (savedStateHandle: SavedStateHandle) -> TrailInfoViewModel(get(), get(), savedStateHandle) }
 }

@@ -60,15 +60,8 @@ fun MainNavHost(
         }
 
         // home screen
-        composable(
-            route = HomeDest.route,
-            arguments = HomeDest.arguments
-        ) { navBackStackEntry ->
-            var trailIdToShowOnMap = navBackStackEntry.arguments?.getString(HomeDest.trailIdArg)
-            trailIdToShowOnMap = HomeDest.nullIfPlaceholder(trailIdToShowOnMap) // avoid placeholder arguments
-
+        composable(route = HomeDest.route) {
             HomeScreen(
-                trailIdToShowOnMap = trailIdToShowOnMap,
                 onNavigateToCameraPreview = { navController.navigateSingleTopTo(CameraPreviewDest.route) },
                 onGetImageResultOnce = navController::getImageResultOnce,
                 onNavigateToTrailInfoWithTrailId = navController::navigateToTrailInfoWithTrailId
@@ -91,7 +84,6 @@ fun MainNavHost(
             val id = backStackEntry.arguments?.getString(TrailInfoDest.idArg)
             TrailInfoScreen(
                 trailId = id,
-                onNavigateToHomeWithTrailId = navController::navigateToHomeWithTrailId,
                 onGoBack = navController::popBackStack
             )
         }

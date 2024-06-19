@@ -11,4 +11,5 @@ sealed class TrailInfoAction : Action {
     data class SetVisibility(val isPublic: Boolean) : TrailInfoAction()
     data object Delete : TrailInfoAction()
     data object Update : TrailInfoAction()
+    data object SetLaunchedTrailId : TrailInfoAction()
 }

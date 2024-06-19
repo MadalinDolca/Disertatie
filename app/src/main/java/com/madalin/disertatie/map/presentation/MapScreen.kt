@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -70,13 +71,11 @@ import com.madalin.disertatie.map.presentation.components.icons.rememberLineEndC
 import com.madalin.disertatie.map.presentation.components.icons.rememberLineStartCircle
 import com.madalin.disertatie.map.presentation.util.LocationPermissionsHandler
 import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
-    trailIdToShow: String? = null,
-    viewModel: MapViewModel = koinViewModel { parametersOf(trailIdToShow) },
+    viewModel: MapViewModel = koinViewModel(),
     paddingValues: PaddingValues,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,

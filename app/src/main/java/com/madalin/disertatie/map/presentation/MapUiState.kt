@@ -31,6 +31,7 @@ data class MapUiState(
     // launched trail
     val isLaunchedTrail: Boolean = false,
     val isLoadingLaunchedTrail: Boolean = false,
+    val launchedTrailId: String? = null,
     //val launchedTrail: Trail? = null,
 
     // weather

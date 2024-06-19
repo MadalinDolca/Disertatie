@@ -6,10 +6,14 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 
 data class GlobalState(
+    // user
     val isUserLoggedIn: Boolean = false,
     val currentUser: User = User(),
 
     // status banner
     val isStatusBannerVisible: Boolean = false,
-    val statusBannerData: StatusBannerData = StatusBannerData(StatusBannerType.Info, UiText.Empty)
+    val statusBannerData: StatusBannerData = StatusBannerData(StatusBannerType.Info, UiText.Empty),
+
+    // trails
+    val launchedTrailId: String? = null
 )

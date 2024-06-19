@@ -7,7 +7,6 @@ import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.IntentSenderRequest
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
@@ -29,9 +28,9 @@ import com.madalin.disertatie.core.domain.result.TrailResult
 import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.domain.validation.TrailValidator
 import com.madalin.disertatie.core.presentation.GlobalDriver
+import com.madalin.disertatie.core.presentation.GlobalState
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
-import com.madalin.disertatie.core.presentation.navigation.MapDest
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.map.domain.DefaultLocationClient
 import com.madalin.disertatie.map.domain.LocationClassifier
@@ -69,21 +68,25 @@ class MapViewModel(
     private val firebaseUserRepository: FirebaseUserRepository,
     private val firebaseContentRepository: FirebaseContentRepository,
     private val weatherRepository: WeatherRepository,
-    private val suggestionGenerator: SuggestionGenerator,
-    private val savedStateHandle: SavedStateHandle
+    private val suggestionGenerator: SuggestionGenerator
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState = _uiState.asStateFlow()
 
     private lateinit var locationFetchingScope: CoroutineScope
     private lateinit var locationClient: LocationClient
-
-    // trail ID obtained from the navigation
-    private val launchedTrailId: String? by lazy { MapDest.nullIfPlaceholder(savedStateHandle[MapDest.trailIdArg]) }
+    private var lastLaunchedTrailId: String? = ""
 
     init {
-        if (launchedTrailId != null) {
-            showLaunchedTrail()
+        viewModelScope.launch {
+            globalDriver.state.collect {
+                it.reduce().run {
+                    if (lastLaunchedTrailId != it.launchedTrailId) {
+                        lastLaunchedTrailId = it.launchedTrailId
+                        showLaunchedTrail()
+                    }
+                }
+            }
         }
     }
 
@@ -95,6 +98,14 @@ class MapViewModel(
     override fun onCleared() {
         super.onCleared()
         stopLocationFetching()
+    }
+
+    private fun GlobalState.reduce() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                launchedTrailId = this.launchedTrailId
+            )
+        }
     }
 
     /**
@@ -239,7 +250,7 @@ class MapViewModel(
             }.launchIn(locationFetchingScope)
     }
 
-    fun stopLocationFetching() {
+    private fun stopLocationFetching() {
         stopTrailCreation()
         if (::locationClient.isInitialized) {
             locationFetchingScope.cancel()
@@ -348,9 +359,20 @@ class MapViewModel(
     }
 
     /**
-     * Stops the trail creation and shows the end dialog.
+     * Stops the trail creation, updates some of the trail data and shows the end dialog.
      */
     private fun stopTrailCreation() {
+        updateTrail {
+            it.copy(
+                endTime = Date(),
+                duration = it.calculateDuration(),
+                startingPointCoordinates = it.obtainStartingPoint()?.toCoordinates(),
+                middlePointCoordinates = it.obtainMiddlePoint()?.toCoordinates(),
+                endingPointCoordinates = it.obtainEndingPoint()?.toCoordinates(),
+                length = it.calculateLength()
+            )
+        }
+
         _uiState.update {
             it.copy(
                 isCreatingTrail = false,
@@ -826,8 +848,8 @@ class MapViewModel(
             return
         }*/
 
-        val trailId = launchedTrailId
-        if (trailId == null) {
+        val launchedTrailId = _uiState.value.launchedTrailId
+        if (launchedTrailId == null) {
             showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
             return
         }
@@ -835,7 +857,7 @@ class MapViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingLaunchedTrail = true) } // loading
 
-            val result = async { firebaseContentRepository.getFullTrailById(trailId) }.await()
+            val result = async { firebaseContentRepository.getFullTrailById(launchedTrailId) }.await()
             when (result) {
                 is TrailResult.Success -> {
                     showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_loaded)
@@ -870,7 +892,7 @@ class MapViewModel(
             )
         }
         moveCameraToUserLocation()
-        savedStateHandle[MapDest.trailIdArg] = null
+        globalDriver.handleAction(GlobalAction.DeleteLaunchedTrailId)
     }
 
     /**

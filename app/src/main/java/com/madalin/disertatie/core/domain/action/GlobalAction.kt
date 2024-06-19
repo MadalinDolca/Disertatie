@@ -8,4 +8,6 @@ sealed class GlobalAction {
     data class SetStatusBannerData(val data: StatusBannerData) : GlobalAction()
     data object ShowStatusBanner : GlobalAction()
     data object HideStatusBanner : GlobalAction()
+    data class SetLaunchedTrailId(val id: String) : GlobalAction()
+    data object DeleteLaunchedTrailId : GlobalAction()
 }

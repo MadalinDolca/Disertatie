@@ -42,6 +42,8 @@ class GlobalDriver(
                 is GlobalAction.SetStatusBannerData -> setStatusBannerData(action.data)
                 GlobalAction.ShowStatusBanner -> toggleStatusBannerVisibility(true)
                 GlobalAction.HideStatusBanner -> toggleStatusBannerVisibility(false)
+                is GlobalAction.SetLaunchedTrailId -> setLaunchedTrailId(action.id)
+                GlobalAction.DeleteLaunchedTrailId -> deleteLaunchedTrailId()
             }
         }
     }
@@ -148,5 +150,19 @@ class GlobalDriver(
                 }
             )
         }
+    }
+
+    /**
+     * Sets the ID of the currently launched trail to the given [id].
+     */
+    private fun setLaunchedTrailId(id: String) {
+        _state.update { it.copy(launchedTrailId = id) }
+    }
+
+    /**
+     * Deletes the ID of the currently launched trail by making it `null`.
+     */
+    private fun deleteLaunchedTrailId() {
+        _state.update { it.copy(launchedTrailId = null) }
     }
 }

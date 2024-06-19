@@ -67,6 +67,7 @@ class TrailInfoViewModel(
             is TrailInfoAction.SetVisibility -> updateCurrentTrail { it.copy(public = action.isPublic) }
             TrailInfoAction.Delete -> deleteTrailFromDatabase()
             TrailInfoAction.Update -> updateTrailInDatabase()
+            TrailInfoAction.SetLaunchedTrailId -> setLaunchedTrailId()
         }
     }
 
@@ -252,5 +253,18 @@ class TrailInfoViewModel(
 
         globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, uiText)))
         globalDriver.handleAction(GlobalAction.ShowStatusBanner)
+    }
+
+    /**
+     * Sets the [global][GlobalDriver] launched trail ID to this [trailId].
+     */
+    private fun setLaunchedTrailId() {
+        val id = trailId
+        if (id == null) {
+            Log.e("TrailInfoViewModel", "setLaunchedTrailId: trailId is null")
+            return
+        }
+
+        globalDriver.handleAction(GlobalAction.SetLaunchedTrailId(id))
     }
 }

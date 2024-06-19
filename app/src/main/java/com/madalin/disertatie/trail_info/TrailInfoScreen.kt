@@ -58,7 +58,6 @@ import org.koin.core.parameter.parametersOf
 fun TrailInfoScreen(
     trailId: String?,
     viewModel: TrailInfoViewModel = koinViewModel { parametersOf(trailId) },
-    onNavigateToHomeWithTrailId: (trailId: String) -> Unit,
     onGoBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,7 +104,10 @@ fun TrailInfoScreen(
 
         LaunchTrailFAB(
             trail = uiState.trail,
-            onClick = { onNavigateToHomeWithTrailId(it) },
+            onClick = {
+                viewModel.handleAction(TrailInfoAction.SetLaunchedTrailId)
+                onGoBack()
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = Dimens.container, bottom = Dimens.container)

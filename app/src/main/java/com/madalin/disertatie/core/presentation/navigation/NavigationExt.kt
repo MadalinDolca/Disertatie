@@ -59,17 +59,3 @@ fun NavHostController.goBackWithImage(image: Bitmap) {
 fun NavHostController.navigateToTrailInfoWithTrailId(trailId: String) {
     this.navigateSingleTopTo(TrailInfoDest.routeBuilder(trailId))
 }
-
-/**
- * Navigates to the home screen with this [trailId].
- */
-fun NavHostController.navigateToHomeWithTrailId(trailId: String) {
-    this.navigate(HomeDest.routeBuilder(trailId))
-}
-
-/**
- * Navigates to the map screen with this [trailId] to show the trail on the map.
- */
-fun NavHostController.navigateToMapWithTrailId(trailId: String) {
-    this.navigate(MapDest.routeBuilder(trailId))
-}

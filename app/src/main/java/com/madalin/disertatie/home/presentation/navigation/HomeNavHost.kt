@@ -50,15 +50,8 @@ fun HomeNavHost(
         }
 
         // map screen
-        composable(
-            route = MapDest.route,
-            arguments = MapDest.arguments
-        ) { backStackEntry ->
-            var trailIdToShow = backStackEntry.arguments?.getString(MapDest.trailIdArg)
-            trailIdToShow = MapDest.nullIfPlaceholder(trailIdToShow) // avoid placeholder arguments
-
+        composable(route = MapDest.route) {
             MapScreen(
-                trailIdToShow = trailIdToShow,
                 paddingValues = paddingValues,
                 onNavigateToCameraPreview = { onNavigateToCameraPreview() },
                 onGetImageResultOnce = { onGetImageResultOnce() }
