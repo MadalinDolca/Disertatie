@@ -8,6 +8,8 @@ import com.madalin.disertatie.core.domain.action.Action
 sealed class TrailInfoAction : Action {
     data class SetName(val name: String) : TrailInfoAction()
     data class SetDescription(val description: String) : TrailInfoAction()
+    data object EnableEditing : TrailInfoAction()
+    data object DisableEditing : TrailInfoAction()
     data class SetVisibility(val isPublic: Boolean) : TrailInfoAction()
     data object Delete : TrailInfoAction()
     data object Update : TrailInfoAction()

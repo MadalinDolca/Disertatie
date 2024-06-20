@@ -13,6 +13,7 @@ import com.madalin.disertatie.core.domain.result.TrailImagesResult
 import com.madalin.disertatie.core.domain.result.TrailInfoResult
 import com.madalin.disertatie.core.domain.result.TrailPointsResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
+import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
@@ -45,7 +46,7 @@ class TrailInfoViewModel(
             }
         }
 
-        // get trail info
+        // get trail data
         getTrailInfo()
     }
 
@@ -64,6 +65,8 @@ class TrailInfoViewModel(
         when (action) {
             is TrailInfoAction.SetName -> updateCurrentTrail { it.copy(name = action.name) }
             is TrailInfoAction.SetDescription -> updateCurrentTrail { it.copy(description = action.description) }
+            TrailInfoAction.EnableEditing -> _uiState.update { it.copy(isEditing = true) }
+            TrailInfoAction.DisableEditing -> _uiState.update { it.copy(isEditing = false) }
             is TrailInfoAction.SetVisibility -> updateCurrentTrail { it.copy(public = action.isPublic) }
             TrailInfoAction.Delete -> deleteTrailFromDatabase()
             TrailInfoAction.Update -> updateTrailInDatabase()
@@ -86,19 +89,19 @@ class TrailInfoViewModel(
 
     /**
      * Obtains the info of the trail that has the current [trailId] in the database.
-     * Calls [getTrailPoints] and [getTrailImages] after the info is obtained.
+     * Calls [getTrailPoints] after the info is obtained.
      */
     private fun getTrailInfo() {
         val id = trailId
         if (id == null) {
-            Log.e("TrailInfoViewModel", "getTrailInfo: trailId is null")
+            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
             return
         }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingInfo = true) } // loading
-            val trailResponse = async { firebaseContentRepository.getTrailInfoById(id) }.await()
 
+            val trailResponse = async { firebaseContentRepository.getTrailInfoById(id) }.await()
             when (trailResponse) {
                 is TrailInfoResult.Success -> {
                     _uiState.update {
@@ -109,7 +112,6 @@ class TrailInfoViewModel(
                         )
                     }
                     getTrailPoints()
-                    getTrailImages()
                 }
 
                 TrailInfoResult.NotFound -> _uiState.update {
@@ -131,24 +133,30 @@ class TrailInfoViewModel(
 
     /**
      * Obtains the trail points of the current trail from the database.
+     * Calls [setTrailPointsDistances] and [getTrailImages] after the points are obtained.
      */
     private fun getTrailPoints() {
         val id = trailId
         if (id == null) {
-            Log.e("TrailInfoViewModel", "getTrailPoints: trailId is null")
+            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
             return
         }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingPoints = true) } // loading
-            val response = async { firebaseContentRepository.getTrailPointsByTrailId(id) }.await()
 
+            val response = async { firebaseContentRepository.getTrailPointsByTrailId(id) }.await()
             when (response) {
-                is TrailPointsResult.Success -> _uiState.update { currentState ->
-                    updateCurrentTrail { it.copy(trailPointsList = response.points.toMutableList()) }
-                    currentState.copy(
-                        isLoadingPoints = false,
-                        loadingPointsError = UiText.Empty
-                    )
+                is TrailPointsResult.Success -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            trailPointsList = response.points,
+                            isLoadingPoints = false,
+                            loadingPointsError = UiText.Empty
+                        )
+                    }
+                    setTrailPointsDistances()
+                    getTrailImages()
                 }
 
                 is TrailPointsResult.Error -> _uiState.update {
@@ -164,24 +172,29 @@ class TrailInfoViewModel(
 
     /**
      * Obtains the trail images of the current trail from the database.
+     * After the images are obtained, it maps the trail points with the images using [mapTrailPointsAndImageUrls].
      */
     private fun getTrailImages() {
         val id = trailId
         if (id == null) {
-            Log.e("TrailInfoViewModel", "getTrailImages: trailId is null")
+            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
             return
         }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingImages = true) } // loading
-            val response = async { firebaseContentRepository.getTrailImagesByTrailId(id) }.await()
 
+            val response = async { firebaseContentRepository.getTrailImagesByTrailId(id) }.await()
             when (response) {
-                is TrailImagesResult.Success -> _uiState.update {
-                    it.copy(
-                        imagesUriList = response.images,
-                        isLoadingImages = false,
-                        loadingInfoError = UiText.Empty
-                    )
+                is TrailImagesResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            imagesUriList = response.images,
+                            isLoadingImages = false,
+                            loadingInfoError = UiText.Empty
+                        )
+                    }
+                    mapTrailPointsAndImageUrls(_uiState.value.trailPointsList, _uiState.value.imagesUriList)
                 }
 
                 is TrailImagesResult.Error -> _uiState.update {
@@ -266,5 +279,15 @@ class TrailInfoViewModel(
         }
 
         globalDriver.handleAction(GlobalAction.SetLaunchedTrailId(id))
+    }
+
+    /**
+     * Sets the trail points distances in the state.
+     */
+    private fun setTrailPointsDistances() {
+        val trailPoints = _uiState.value.trailPointsList
+        val distances = Trail(trailPointsList = trailPoints.toMutableList()).calculateTrailPointsDistances()
+
+        _uiState.update { it.copy(trailPointsDistances = distances) }
     }
 }

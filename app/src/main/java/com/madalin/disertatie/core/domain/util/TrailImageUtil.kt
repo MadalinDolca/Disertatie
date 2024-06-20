@@ -1,4 +1,4 @@
-package com.madalin.disertatie.core.data.util
+package com.madalin.disertatie.core.domain.util
 
 import com.madalin.disertatie.core.domain.model.TrailPoint
 

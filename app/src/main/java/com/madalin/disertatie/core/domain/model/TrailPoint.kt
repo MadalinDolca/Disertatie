@@ -1,6 +1,7 @@
 package com.madalin.disertatie.core.domain.model
 
 import android.graphics.Bitmap
+import android.location.Location
 import android.os.Parcelable
 import com.google.android.gms.maps.model.LatLng
 import com.madalin.disertatie.core.domain.util.generateId
@@ -28,6 +29,21 @@ data class TrailPoint(
      * Returns the latitude and longitude of this [TrailPoint] as a [Coordinates].
      */
     fun toCoordinates() = Coordinates(this.latitude, this.longitude)
+
+    /**
+     * Returns the distance between this [TrailPoint] and the given [trailPoint] in meters.
+     */
+    fun distanceTo(trailPoint: TrailPoint): Float {
+        val thisLocation = Location("")
+        thisLocation.latitude = this.latitude
+        thisLocation.longitude = this.longitude
+
+        val givenLocation = Location("")
+        givenLocation.latitude = trailPoint.latitude
+        givenLocation.longitude = trailPoint.longitude
+
+        return thisLocation.distanceTo(givenLocation)
+    }
 
     /**
      * Extracts the images of this trail point and returns it as a list of [Bitmap]s.

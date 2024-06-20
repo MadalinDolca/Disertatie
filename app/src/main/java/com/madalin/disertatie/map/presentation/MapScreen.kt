@@ -126,7 +126,7 @@ fun MapScreen(
                 skipPartiallyExpanded = true, // fully expanded
                 //confirmValueChange = { false } // not dismissible when clicked outside of the sheet
             ),
-            isOwner = uiState.currentTrail?.id == uiState.currentUser?.id,
+            isOwner = uiState.currentTrail?.userId == uiState.currentUser?.id,
             trailPoint = selectedTrailPoint,
             suggestionDialogState = uiState.suggestionDialogState,
             isLoadingWeather = uiState.isLoadingWeather,

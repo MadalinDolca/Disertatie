@@ -11,7 +11,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.madalin.disertatie.core.data.CollectionPath
 import com.madalin.disertatie.core.data.StoragePath
 import com.madalin.disertatie.core.data.util.imageUploadTasks
-import com.madalin.disertatie.core.data.util.mapTrailPointsAndImageUrls
+import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
 import com.madalin.disertatie.core.data.util.trailWriteTasks
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint

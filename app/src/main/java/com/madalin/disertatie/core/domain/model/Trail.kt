@@ -90,4 +90,22 @@ data class Trail(
 
         return totalDistance
     }
+
+    /**
+     * Calculates the distances between each [TrailPoint] in the trail and returns a list of distances.
+     */
+    fun calculateTrailPointsDistances(): List<Float> {
+        val distancesList = mutableListOf<Float>()
+        var distance = 0f // initial distance is 0
+
+        distancesList.add(distance) // adds the initial distance then calculates the rest
+        trailPointsList.forEachIndexed { index, trailPoint ->
+            if (index > 0) {
+                distance += trailPointsList[index - 1].distanceTo(trailPoint)
+                distancesList.add(distance)
+            }
+        }
+
+        return distancesList
+    }
 }

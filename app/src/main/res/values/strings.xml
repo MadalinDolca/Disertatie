@@ -158,4 +158,10 @@
     <string name="stop_trail_creation_before_launching_a_trail">Stop trail creation before launching a trail</string>
     <string name="it_took_x_to_create_this_trail">It took %s to create this trail</string>
     <string name="it_has_a_length_of">It has a length of</string>
+    <string name="edit">Edit</string>
+    <string name="documented_trail_points">Documented trail points</string>
+    <string name="be_careful_here">Be careful here!</string>
+    <string name="loading_trail_points">Loading trail points</string>
+    <string name="trail_length">Trail length</string>
+    <string name="travel_time">Travel time</string>
 </resources>
