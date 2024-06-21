@@ -46,7 +46,10 @@ fun HomeNavHost(
                 )
             }
         ) {
-            DiscoverScreen()
+            DiscoverScreen(
+                paddingValues = paddingValues,
+                onNavigateToTrailInfo = { onNavigateToTrailInfo(it) }
+            )
         }
 
         // map screen

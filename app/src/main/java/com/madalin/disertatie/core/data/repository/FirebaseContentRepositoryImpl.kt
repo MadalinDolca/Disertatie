@@ -1,5 +1,6 @@
 package com.madalin.disertatie.core.data.repository
 
+import android.location.Location
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
@@ -11,7 +12,6 @@ import com.google.firebase.storage.FirebaseStorage
 import com.madalin.disertatie.core.data.CollectionPath
 import com.madalin.disertatie.core.data.StoragePath
 import com.madalin.disertatie.core.data.util.imageUploadTasks
-import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
 import com.madalin.disertatie.core.data.util.trailWriteTasks
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
@@ -23,6 +23,7 @@ import com.madalin.disertatie.core.domain.result.TrailPointsResult
 import com.madalin.disertatie.core.domain.result.TrailResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.domain.result.TrailsListResult
+import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -162,6 +163,64 @@ class FirebaseContentRepositoryImpl(
             return TrailResult.Success(trail)
         } catch (e: Exception) {
             return TrailResult.Error(e.message)
+        }
+    }
+
+    override suspend fun getTrailsByQuery(query: String): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS)
+
+        try {
+            val trails = colRef.get().await().toObjects<Trail>()
+            val queriedTrails = trails.filter {
+                it.name.lowercase().contains(query) || it.description.lowercase().contains(query)
+            }
+
+            return TrailsListResult.Success(queriedTrails)
+        } catch (e: Exception) {
+            return TrailsListResult.Error(e.message)
+        }
+    }
+
+    override suspend fun getNearbyTrailsByLocation(location: Location, minDistance: Int): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS)
+
+        try {
+            val trails = colRef.get().await().toObjects<Trail>()
+            val nearbyTrails = mutableListOf<Trail>()
+
+            trails.forEach {
+                val distanceToStartingPoint = it.startingPointCoordinates?.distanceTo(location)
+                val distanceToMiddlePoint = it.middlePointCoordinates?.distanceTo(location)
+                val distanceToEndingPoint = it.endingPointCoordinates?.distanceTo(location)
+
+                if (distanceToStartingPoint != null && distanceToStartingPoint <= minDistance
+                    || distanceToMiddlePoint != null && distanceToMiddlePoint <= minDistance
+                    || distanceToEndingPoint != null && distanceToEndingPoint <= minDistance
+                ) {
+                    val currentTrail = it.apply {
+                        this.distanceToStartingPoint = distanceToStartingPoint
+                        this.distanceToMiddlePoint = distanceToMiddlePoint
+                        this.distanceToEndingPoint = distanceToEndingPoint
+                    }
+                    nearbyTrails.add(currentTrail)
+                }
+            }
+
+            return TrailsListResult.Success(nearbyTrails)
+        } catch (e: Exception) {
+            return TrailsListResult.Error(e.message)
+        }
+    }
+
+    override suspend fun getTrailsWithLimit(limit: Long): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS)
+        val query = colRef.limit(limit)
+
+        try {
+            val trails = query.get().await().toObjects<Trail>()
+            return TrailsListResult.Success(trails)
+        } catch (e: Exception) {
+            return TrailsListResult.Error(e.message)
         }
     }
 }

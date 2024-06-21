@@ -164,4 +164,14 @@
     <string name="loading_trail_points">Loading trail points</string>
     <string name="trail_length">Trail length</string>
     <string name="travel_time">Travel time</string>
+    <string name="search_trails">Search trails</string>
+    <string name="enter_more_than_x_characters">Enter more than %d characters</string>
+    <string name="could_not_find_any_trail_that_contains_the_given_query">Could not find any trail that contains the given query</string>
+    <string name="nearby_trails">Nearby trails</string>
+    <string name="could_not_get_the_nearby_trails_because_the_user_location_is_null">Could not get the nearby trails because the user location is null</string>
+    <string name="could_not_get_the_nearby_trails">Could not get the nearby trails</string>
+    <string name="already_looking_for_nearby_trails_please_wait">Already looking for nearby trails. Please wait!</string>
+    <string name="there_are_no_trails_nearby">There are no trails nearby</string>
+    <string name="searching_error">Searching error</string>
+    <string name="could_not_get_trails">Could not get trails</string>
 </resources>

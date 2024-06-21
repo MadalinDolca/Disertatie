@@ -100,10 +100,14 @@ class MapViewModel(
         stopLocationFetching()
     }
 
+    /**
+     * Reduces this [GlobalState] into the [MapUiState].
+     */
     private fun GlobalState.reduce() {
         _uiState.update { currentState ->
             currentState.copy(
                 currentUser = this.currentUser,
+                currentUserLocation = this.currentUserLocation,
                 launchedTrailId = this.launchedTrailId
             )
         }
@@ -299,10 +303,11 @@ class MapViewModel(
     }
 
     /**
-     * Updates the user location state with the given [location].
+     * Globally updates the user location state to the given [location].
      */
     private fun updateUserLocation(location: Location) {
-        _uiState.update { it.copy(currentUserLocation = location) }
+        Log.d("MapViewModel", "updateUserLocation: $location")
+        globalDriver.handleAction(GlobalAction.SetUserLocation(location))
     }
 
     /**

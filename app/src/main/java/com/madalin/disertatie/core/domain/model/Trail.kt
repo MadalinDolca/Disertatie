@@ -28,6 +28,10 @@ data class Trail(
     @ServerTimestamp var createdAt: Date? = null,
     @ServerTimestamp var updatedAt: Date? = null
 ) : Parcelable {
+    var distanceToStartingPoint: Float? = null
+    var distanceToMiddlePoint: Float? = null
+    var distanceToEndingPoint: Float? = null
+
     /**
      * Returns all the [Bitmap] images of every [TrailPoint] of this trail.
      */

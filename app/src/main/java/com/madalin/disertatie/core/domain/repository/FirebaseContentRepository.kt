@@ -1,5 +1,6 @@
 package com.madalin.disertatie.core.domain.repository
 
+import android.location.Location
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.result.TrailDeleteResult
 import com.madalin.disertatie.core.domain.result.TrailImagesResult
@@ -57,4 +58,20 @@ interface FirebaseContentRepository {
      * Retrieves the complete data of the trail with the given [trailId] as a [TrailResult].
      */
     suspend fun getFullTrailById(trailId: String): TrailResult
+
+    /**
+     * Retrieves the trails that match the given [query] as a [TrailsListResult].
+     */
+    suspend fun getTrailsByQuery(query: String): TrailsListResult
+
+    /**
+     * Retrieves the trails that are at most [minDistance] meters away from the given [location] as
+     * a [TrailsListResult].
+     */
+    suspend fun getNearbyTrailsByLocation(location: Location, minDistance: Int): TrailsListResult
+
+    /**
+     * Retrieves a [limited][limit] number of trails as a [TrailsListResult].
+     */
+    suspend fun getTrailsWithLimit(limit: Long): TrailsListResult
 }

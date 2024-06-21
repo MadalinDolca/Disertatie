@@ -1,5 +1,6 @@
 package com.madalin.disertatie.core.presentation
 
+import android.location.Location
 import android.util.Log
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.GlobalAction
@@ -38,6 +39,7 @@ class GlobalDriver(
         withContext(dispatcher) {
             when (action) {
                 is GlobalAction.SetUserLoginStatus -> toggleUserLoginStatus(action.isLoggedIn)
+                is GlobalAction.SetUserLocation -> setUserLocation(action.location)
                 GlobalAction.ListenForUserData -> listenForUserData()
                 is GlobalAction.SetStatusBannerData -> setStatusBannerData(action.data)
                 GlobalAction.ShowStatusBanner -> toggleStatusBannerVisibility(true)
@@ -121,14 +123,23 @@ class GlobalDriver(
         }
     }
 
+    /**
+     * Sets the status banner data to the given [data].
+     */
     private fun setStatusBannerData(data: StatusBannerData) {
         _state.update { it.copy(statusBannerData = data) }
     }
 
+    /**
+     * Sets the status banner visibility to the given [isVisible] state.
+     */
     private fun toggleStatusBannerVisibility(isVisible: Boolean) {
         _state.update { it.copy(isStatusBannerVisible = isVisible) }
     }
 
+    /**
+     * Sets the user login status to the given [isLoggedIn] state.
+     */
     private fun toggleUserLoginStatus(isLoggedIn: Boolean) {
         if (isLoggedIn) {
             _state.update { it.copy(isUserLoggedIn = true) }
@@ -150,6 +161,13 @@ class GlobalDriver(
                 }
             )
         }
+    }
+
+    /**
+     * Sets the current user location to the given [location].
+     */
+    private fun setUserLocation(location: Location) {
+        _state.update { it.copy(currentUserLocation = location) }
     }
 
     /**
