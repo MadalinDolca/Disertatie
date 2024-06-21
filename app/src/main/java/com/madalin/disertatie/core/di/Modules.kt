@@ -22,7 +22,7 @@ import com.madalin.disertatie.map.data.repository.WeatherRepositoryImpl
 import com.madalin.disertatie.map.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.presentation.MapViewModel
 import com.madalin.disertatie.profile.presentation.ProfileViewModel
-import com.madalin.disertatie.trail_info.TrailInfoViewModel
+import com.madalin.disertatie.trail_info.presentation.TrailInfoViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 

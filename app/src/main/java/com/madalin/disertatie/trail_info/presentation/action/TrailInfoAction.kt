@@ -1,4 +1,4 @@
-package com.madalin.disertatie.trail_info.action
+package com.madalin.disertatie.trail_info.presentation.action
 
 import com.madalin.disertatie.core.domain.action.Action
 

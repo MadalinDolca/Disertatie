@@ -1,4 +1,4 @@
-package com.madalin.disertatie.trail_info
+package com.madalin.disertatie.trail_info.presentation
 
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
@@ -20,7 +20,7 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.navigation.TrailInfoDest
 import com.madalin.disertatie.core.presentation.util.UiText
-import com.madalin.disertatie.trail_info.action.TrailInfoAction
+import com.madalin.disertatie.trail_info.presentation.action.TrailInfoAction
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

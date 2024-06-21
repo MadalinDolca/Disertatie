@@ -1,4 +1,4 @@
-package com.madalin.disertatie.trail_info
+package com.madalin.disertatie.trail_info.presentation
 
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint

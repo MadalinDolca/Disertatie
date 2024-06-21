@@ -1,4 +1,4 @@
-package com.madalin.disertatie.trail_info.components
+package com.madalin.disertatie.trail_info.presentation.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas

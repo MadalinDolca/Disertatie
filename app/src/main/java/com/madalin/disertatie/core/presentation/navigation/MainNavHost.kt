@@ -12,7 +12,7 @@ import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetScre
 import com.madalin.disertatie.auth.presentation.register.RegisterScreen
 import com.madalin.disertatie.camera_preview.presentation.CameraPreviewScreen
 import com.madalin.disertatie.home.presentation.HomeScreen
-import com.madalin.disertatie.trail_info.TrailInfoScreen
+import com.madalin.disertatie.trail_info.presentation.TrailInfoScreen
 
 @Composable
 fun MainNavHost(

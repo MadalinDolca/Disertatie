@@ -1,4 +1,4 @@
-package com.madalin.disertatie.trail_info
+package com.madalin.disertatie.trail_info.presentation
 
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
@@ -74,8 +74,8 @@ import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.presentation.components.ScreenTopBar
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.presentation.util.UiText
-import com.madalin.disertatie.trail_info.action.TrailInfoAction
-import com.madalin.disertatie.trail_info.components.TrailPointBannerItem
+import com.madalin.disertatie.trail_info.presentation.action.TrailInfoAction
+import com.madalin.disertatie.trail_info.presentation.components.TrailPointBannerItem
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
