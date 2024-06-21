@@ -7,9 +7,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +22,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LocationSearching
 import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.OnlinePrediction
 import androidx.compose.material.icons.rounded.PostAdd
 import androidx.compose.material.icons.rounded.Rocket
 import androidx.compose.material.icons.rounded.Route
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -46,13 +54,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.RoundCap
 import com.google.maps.android.compose.CameraPositionState
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Polyline
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.Action
+import com.madalin.disertatie.core.domain.extension.prettyLength
 import com.madalin.disertatie.core.domain.model.Trail
+import com.madalin.disertatie.core.domain.util.NEARBY_TRAIL_MIN_DISTANCE
 import com.madalin.disertatie.core.presentation.components.LoadingDialog
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.domain.extension.toLatLng
@@ -70,6 +81,7 @@ import com.madalin.disertatie.map.presentation.components.icons.rememberLineEndC
 import com.madalin.disertatie.map.presentation.components.icons.rememberLineStartCircle
 import com.madalin.disertatie.map.presentation.util.LocationPermissionsHandler
 import org.koin.androidx.compose.koinViewModel
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +90,7 @@ fun MapScreen(
     paddingValues: PaddingValues,
     onNavigateToCameraPreview: () -> Unit,
     onGetImageResultOnce: () -> Bitmap?,
+    onNavigateToTrailInfo: (trailId: String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val applicationContext = LocalContext.current.applicationContext
@@ -100,13 +113,14 @@ fun MapScreen(
         cameraPositionState = uiState.cameraPositionState,
         mapUiSettings = uiState.mapUiSettings,
         mapProperties = uiState.mapProperties,
-        isLocationAvailable = uiState.isLocationAvailable,
         isCreatingTrail = uiState.isCreatingTrail,
         isLaunchedTrail = uiState.isLaunchedTrail,
         userLocation = uiState.currentUserLocation,
         currentTrail = uiState.currentTrail,
+        areNearbyTrailsVisible = uiState.areNearbyTrailsVisible,
+        nearbyTrails = uiState.nearbyTrails,
         onAction = viewModel::handleAction,
-        onEnableLocationClick = enableLocationSettingsLambda
+        onNavigateToTrailInfo = { onNavigateToTrailInfo(it) }
     )
 
     MapControls(
@@ -116,6 +130,8 @@ fun MapScreen(
         isCreatingTrail = uiState.isCreatingTrail,
         isUserLocationButtonVisible = viewModel.isUserLocationButtonVisible(),
         isLaunchedTrail = uiState.isLaunchedTrail,
+        areNearbyTrailsVisible = uiState.areNearbyTrailsVisible,
+        nearbyTrailsCount = uiState.nearbyTrails.size,
         onAction = viewModel::handleAction
     )
 
@@ -137,6 +153,11 @@ fun MapScreen(
             onGetImageResultOnce = { onGetImageResultOnce() }
         )
     }
+
+    LocationNotAvailableBanner(
+        isVisible = !uiState.isLocationAvailable,
+        onEnableLocationClick = enableLocationSettingsLambda
+    )
 
     uiState.currentTrail?.let {
         TrailEndDialog(
@@ -160,13 +181,14 @@ private fun MapContainer(
     cameraPositionState: CameraPositionState,
     mapUiSettings: MapUiSettings,
     mapProperties: MapProperties,
-    isLocationAvailable: Boolean,
     isCreatingTrail: Boolean,
     isLaunchedTrail: Boolean,
     userLocation: Location?,
     currentTrail: Trail?,
+    areNearbyTrailsVisible: Boolean,
+    nearbyTrails: List<Trail>,
     onAction: (Action) -> Unit,
-    onEnableLocationClick: () -> Unit,
+    onNavigateToTrailInfo: (trailId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     GoogleMap(
@@ -180,7 +202,7 @@ private fun MapContainer(
         }
 
         // path will not be shown if creation is stopped and the trail doesn't exist
-        // of if no trail has been launched and the current trail doesn't exist
+        // or if no trail has been launched and the current trail doesn't exist
         if (isCreatingTrail && currentTrail != null
             || isLaunchedTrail && currentTrail != null
         ) {
@@ -200,7 +222,7 @@ private fun MapContainer(
 
             Polyline(
                 points = currentTrail.trailPointsList.map { LatLng(it.latitude, it.longitude) },
-                clickable = true,
+                clickable = false,
                 color = Color(0xFF0040FF),
                 startCap = RoundCap(),
                 endCap = RoundCap(),
@@ -221,12 +243,37 @@ private fun MapContainer(
                 trail = currentTrail
             )
         }
-    }
 
-    LocationNotAvailableBanner(
-        isVisible = !isLocationAvailable,
-        onEnableLocationClick = { onEnableLocationClick() }
-    )
+        // shows the nearby trails and a radius if they are set to visible
+        if (areNearbyTrailsVisible) {
+            userLocation?.let {
+                Circle(
+                    center = it.toLatLng(),
+                    radius = NEARBY_TRAIL_MIN_DISTANCE.toDouble(),
+                    strokeColor = Color.Red,
+                    strokeWidth = 10f
+                )
+            }
+
+            nearbyTrails.forEach { trail ->
+                Polyline(
+                    points = trail.trailPointsList.map { LatLng(it.latitude, it.longitude) },
+                    clickable = true,
+                    color = remember {
+                        Color(
+                            red = Random.nextInt(256),
+                            green = Random.nextInt(256),
+                            blue = Random.nextInt(256)
+                        )
+                    },
+                    startCap = RoundCap(),
+                    endCap = RoundCap(),
+                    width = 15f,
+                    onClick = { onNavigateToTrailInfo(trail.id) }
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -237,6 +284,8 @@ private fun MapControls(
     isCreatingTrail: Boolean,
     isUserLocationButtonVisible: Boolean,
     isLaunchedTrail: Boolean,
+    areNearbyTrailsVisible: Boolean,
+    nearbyTrailsCount: Int,
     onAction: (Action) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -269,9 +318,22 @@ private fun MapControls(
         RightSideControls(
             isCreatingTrail = isCreatingTrail,
             isLaunchedTrail = isLaunchedTrail,
+            areNearbyTrailsVisible = areNearbyTrailsVisible,
             onShowTrailPointInfoModalClick = { onAction(TrailAction.ShowTrailPointInfoModal()) },
             onCloseLaunchedTrailClick = { onAction(TrailAction.CloseLaunchedTrail) },
-            modifier = modifier.align(Alignment.CenterEnd)
+            onShowNearbyTrailsClick = { onAction(TrailAction.ShowNearbyTrails) },
+            onHideNearbyTrailsClick = { onAction(TrailAction.HideNearbyTrails) },
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
+
+        NearbyTrailsInfoBanner(
+            isVisible = areNearbyTrailsVisible,
+            nearbyTrailsCount = nearbyTrailsCount,
+            radius = NEARBY_TRAIL_MIN_DISTANCE,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(horizontal = Dimens.container)
         )
     }
 }
@@ -320,8 +382,11 @@ private fun LeftSideControls(
 private fun RightSideControls(
     isCreatingTrail: Boolean,
     isLaunchedTrail: Boolean,
+    areNearbyTrailsVisible: Boolean,
     onShowTrailPointInfoModalClick: () -> Unit,
     onCloseLaunchedTrailClick: () -> Unit,
+    onShowNearbyTrailsClick: () -> Unit,
+    onHideNearbyTrailsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -339,6 +404,43 @@ private fun RightSideControls(
             onClick = { onShowTrailPointInfoModalClick() },
             modifier = Modifier.padding(end = Dimens.container)
         )
+
+        ToggleNearbyTrailsButton(
+            isTurnedOn = areNearbyTrailsVisible,
+            onShowNearbyTrailsClick = { onShowNearbyTrailsClick() },
+            onHideNearbyTrailsClick = { onHideNearbyTrailsClick() },
+            modifier = Modifier.padding(end = Dimens.container)
+        )
+    }
+}
+
+@Composable
+private fun NearbyTrailsInfoBanner(
+    isVisible: Boolean,
+    nearbyTrailsCount: Int,
+    radius: Int,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = isVisible,
+        modifier = modifier,
+        enter = slideInVertically(
+            animationSpec = tween(durationMillis = 150, easing = LinearOutSlowInEasing)
+        ),
+        exit = slideOutVertically(
+            animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)
+        )
+    ) {
+        Card {
+            Text(
+                text = stringResource(
+                    R.string.found_x_trails_within_a_radius_of_y,
+                    nearbyTrailsCount,
+                    radius.prettyLength()
+                ),
+                modifier = Modifier.padding(Dimens.container)
+            )
+        }
     }
 }
 
@@ -499,5 +601,31 @@ private fun CloseLaunchedTrailButton(
                 modifier = Modifier.size(Dimens.iconButtonContentSize)
             )
         }
+    }
+}
+
+@Composable
+private fun ToggleNearbyTrailsButton(
+    isTurnedOn: Boolean,
+    onShowNearbyTrailsClick: () -> Unit,
+    onHideNearbyTrailsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = { if (isTurnedOn) onHideNearbyTrailsClick() else onShowNearbyTrailsClick() },
+        modifier = modifier.size(Dimens.iconButtonContainerSize),
+        colors = if (isTurnedOn) {
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )
+        } else {
+            IconButtonDefaults.filledIconButtonColors()
+        }
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.OnlinePrediction,
+            contentDescription = "Nearby trails",
+            modifier = Modifier.size(Dimens.iconButtonContentSize)
+        )
     }
 }

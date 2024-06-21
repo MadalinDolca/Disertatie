@@ -13,6 +13,7 @@ import com.madalin.disertatie.map.presentation.components.SuggestionDialogState
 data class MapUiState(
     val currentUser: User? = null,
     val isLocationAvailable: Boolean = true,
+    val currentUserLocation: Location? = null,
 
     // trail creation
     val currentTrail: Trail? = null,
@@ -22,9 +23,9 @@ data class MapUiState(
     val isTrailUploading: Boolean = false,
     val trailNameError: UiText = UiText.Empty,
 
-    val currentUserLocation: Location? = null,
-    val userTrails: MutableList<Trail> = mutableListOf(),
-    val remoteTrails: MutableList<Trail> = mutableListOf(),
+    // nearby trails
+    val nearbyTrails: List<Trail> = emptyList(),
+    val areNearbyTrailsVisible: Boolean = false,
 
     // trail point info modal bottom sheet
     val selectedTrailPoint: TrailPoint? = null,
@@ -34,7 +35,6 @@ data class MapUiState(
     val isLaunchedTrail: Boolean = false,
     val isLoadingLaunchedTrail: Boolean = false,
     val launchedTrailId: String? = null,
-    //val launchedTrail: Trail? = null,
 
     // weather
     val isLoadingWeather: Boolean = false,

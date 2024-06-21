@@ -57,7 +57,8 @@ fun HomeNavHost(
             MapScreen(
                 paddingValues = paddingValues,
                 onNavigateToCameraPreview = { onNavigateToCameraPreview() },
-                onGetImageResultOnce = { onGetImageResultOnce() }
+                onGetImageResultOnce = { onGetImageResultOnce() },
+                onNavigateToTrailInfo = { onNavigateToTrailInfo(it) }
             )
         }
 

@@ -78,7 +78,7 @@ class DiscoverViewModel(
         }
 
         if (_uiState.value.isLoadingNearbyTrails) {
-            showStatusBanner(StatusBannerType.Info, UiText.Resource(R.string.already_looking_for_nearby_trails_please_wait))
+            showStatusBanner(StatusBannerType.Info, R.string.already_looking_for_nearby_trails_please_wait)
             return
         }
 

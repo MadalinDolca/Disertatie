@@ -93,8 +93,10 @@ class FirebaseContentRepositoryImpl(
             .document(trailId)
             .collection(CollectionPath.TRAIL_POINTS_LIST)
 
+        val query = colRef.orderBy("timestamp", Query.Direction.ASCENDING)
+
         try {
-            val trailPoints = colRef.get().await().toObjects<TrailPoint>()
+            val trailPoints = query.get().await().toObjects<TrailPoint>()
             return TrailPointsResult.Success(trailPoints)
         } catch (e: Exception) {
             return TrailPointsResult.Error(e.message)
@@ -204,6 +206,40 @@ class FirebaseContentRepositoryImpl(
                     }
                     nearbyTrails.add(currentTrail)
                 }
+            }
+
+            return TrailsListResult.Success(nearbyTrails)
+        } catch (e: Exception) {
+            return TrailsListResult.Error(e.message)
+        }
+    }
+
+    override suspend fun getNearbyTrailsWithPointsByLocation(location: Location, minDistance: Int): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS)
+
+        try {
+            val trails = colRef.get().await().toObjects<Trail>()
+            val nearbyTrails = mutableListOf<Trail>()
+
+            // selects nearby trails and saves distances
+            trails.forEach {
+                val distanceToStartingPoint = it.startingPointCoordinates?.distanceTo(location)
+                val distanceToMiddlePoint = it.middlePointCoordinates?.distanceTo(location)
+                val distanceToEndingPoint = it.endingPointCoordinates?.distanceTo(location)
+
+                if (distanceToStartingPoint != null && distanceToStartingPoint <= minDistance
+                    || distanceToMiddlePoint != null && distanceToMiddlePoint <= minDistance
+                    || distanceToEndingPoint != null && distanceToEndingPoint <= minDistance
+                ) {
+                    nearbyTrails.add(it)
+                }
+            }
+
+            // retrieves trail points for each nearby trail
+            nearbyTrails.forEach { trail ->
+                val trailPointsColRef = colRef.document(trail.id).collection(CollectionPath.TRAIL_POINTS_LIST)
+                val trailPointsQuery = trailPointsColRef.orderBy("timestamp", Query.Direction.ASCENDING)
+                trail.trailPointsList = trailPointsQuery.get().await().toObjects<TrailPoint>().toMutableList()
             }
 
             return TrailsListResult.Success(nearbyTrails)

@@ -25,6 +25,8 @@ import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.domain.result.SuggestionResult
 import com.madalin.disertatie.core.domain.result.TrailResult
+import com.madalin.disertatie.core.domain.result.TrailsListResult
+import com.madalin.disertatie.core.domain.util.NEARBY_TRAIL_MIN_DISTANCE
 import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.domain.validation.TrailValidator
 import com.madalin.disertatie.core.presentation.GlobalDriver
@@ -92,7 +94,8 @@ class MapViewModel(
 
     companion object {
         private const val MIN_DISTANCE = 3
-        private const val ZOOM_LEVEL = 18f
+        private const val ZOOM_LEVEL_CLOSE = 18f
+        private const val ZOOM_LEVEL_FAR = 11f
     }
 
     override fun onCleared() {
@@ -193,6 +196,9 @@ class MapViewModel(
 
             TrailAction.HideLoadingLaunchedTrailDialog -> hideLoadingLaunchedTrailDialog()
             TrailAction.CloseLaunchedTrail -> closeLaunchedTrail()
+
+            TrailAction.ShowNearbyTrails -> showNearbyTrails()
+            TrailAction.HideNearbyTrails -> hideNearbyTrails()
         }
     }
 
@@ -545,7 +551,7 @@ class MapViewModel(
             viewModelScope.launch { //Handler(Looper.getMainLooper()).post {}
                 try {
                     _uiState.value.cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngZoom(userLocation.toLatLng(), ZOOM_LEVEL)
+                        CameraUpdateFactory.newLatLngZoom(userLocation.toLatLng(), ZOOM_LEVEL_CLOSE)
                     )
                 } catch (e: Exception) {
                     Log.d("MapViewModel", "moveCameraToUserLocation: ${e.message}")
@@ -561,7 +567,7 @@ class MapViewModel(
         viewModelScope.launch {
             try {
                 _uiState.value.cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(coordinates, ZOOM_LEVEL)
+                    CameraUpdateFactory.newLatLngZoom(coordinates, ZOOM_LEVEL_CLOSE)
                 )
             } catch (e: Exception) {
                 Log.d("MapViewModel", "moveCameraToCoordinates: ${e.message}")
@@ -932,5 +938,65 @@ class MapViewModel(
         }
 
         moveCameraToCoordinates(trail.trailPointsList.last().toLatLng())
+    }
+
+    /**
+     * Gets the nearby trails by the current user location.
+     */
+    private fun getNearbyTrails() {
+        val currentUserLocation = _uiState.value.currentUserLocation
+        if (currentUserLocation == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_nearby_trails_because_the_user_location_is_null)
+            return
+        }
+
+        viewModelScope.launch {
+            val result = async {
+                firebaseContentRepository.getNearbyTrailsWithPointsByLocation(
+                    currentUserLocation, NEARBY_TRAIL_MIN_DISTANCE
+                )
+            }.await()
+
+            when (result) {
+                is TrailsListResult.Success -> _uiState.update { it.copy(nearbyTrails = result.trails) }
+
+                is TrailsListResult.Error -> {
+                    showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_the_nearby_trails)
+                    _uiState.update { it.copy(nearbyTrails = emptyList()) }
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows the nearby trails on the map and zooms out the camera to the user's location.
+     */
+    private fun showNearbyTrails() {
+        val userLocation = _uiState.value.currentUserLocation
+        if (userLocation == null) {
+            showStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_nearby_trails_because_the_user_location_is_null)
+            return
+        }
+
+        _uiState.update { it.copy(areNearbyTrailsVisible = true) }
+        getNearbyTrails()
+
+        viewModelScope.launch {
+            try {
+                _uiState.value.cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(userLocation.toLatLng(), ZOOM_LEVEL_FAR)
+                )
+            } catch (e: Exception) {
+                Log.d("MapViewModel", "showNearbyTrails: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Hides the nearby trails and zooms in the camera to the user's location.
+     */
+    private fun hideNearbyTrails() {
+        _uiState.update { it.copy(areNearbyTrailsVisible = false) }
+        moveCameraToUserLocation()
     }
 }

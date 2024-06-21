@@ -174,4 +174,5 @@
     <string name="there_are_no_trails_nearby">There are no trails nearby</string>
     <string name="searching_error">Searching error</string>
     <string name="could_not_get_trails">Could not get trails</string>
+    <string name="found_x_trails_within_a_radius_of_y">Found %d trails within a radius of %s</string>
 </resources>
