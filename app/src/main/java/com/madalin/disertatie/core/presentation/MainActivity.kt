@@ -4,11 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import coil.Coil
@@ -19,6 +23,7 @@ import com.madalin.disertatie.core.presentation.navigation.HomeDest
 import com.madalin.disertatie.core.presentation.navigation.LoginDest
 import com.madalin.disertatie.core.presentation.navigation.MainNavHost
 import com.madalin.disertatie.core.presentation.theme.DisertatieTheme
+import com.madalin.disertatie.core.presentation.util.Dimens
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
@@ -63,6 +68,10 @@ fun DisertatieApp(viewModel: MainActivityViewModel) {
     StatusBanner(
         isVisible = uiState.isStatusBannerVisible,
         data = uiState.statusBannerData,
-        onDismiss = setStatusBannerVisibilityLambda
+        onDismiss = setStatusBannerVisibilityLambda,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(Dimens.container)
+            .statusBarsPadding()
     )
 }

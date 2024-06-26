@@ -9,9 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cancel
@@ -58,6 +56,7 @@ fun StatusBanner(
 
     AnimatedVisibility(
         visible = isVisible,
+        modifier = modifier,
         enter = slideInVertically(
             animationSpec = tween(durationMillis = 150, easing = LinearOutSlowInEasing)
         ),
@@ -71,13 +70,8 @@ fun StatusBanner(
             StatusBannerType.Info -> Color.Unspecified
         }
         Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(Dimens.container)
-                .statusBarsPadding(),
-            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = containerColor),
-            border = BorderStroke(width = 2.dp, color = contentColorFor(backgroundColor = containerColor))
+            border = BorderStroke(width = 1.dp, color = contentColorFor(backgroundColor = containerColor))
         ) {
             Row(
                 modifier = Modifier.padding(Dimens.container),
