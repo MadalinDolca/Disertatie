@@ -49,7 +49,7 @@
     <string name="device_location_has_been_enabled">Device location has been enabled</string>
     <string name="enable_location">Enable location</string>
     <string name="you_are_here">You are here</string>
-    <string name="location_is_not_available_it_might_be_disabled">Location is not available. It might be disabled.</string>
+    <string name="location_is_unavailable_it_might_be_disabled_tap_this_banner_to_enable_it">Location is unavailable, it might be disabled. Tap this banner to enable it.</string>
     <string name="create_trail">Create trail</string>
     <string name="stop">Stop</string>
     <string name="add_info">Add info</string>

@@ -71,11 +71,11 @@ import com.madalin.disertatie.map.presentation.action.LocationAction
 import com.madalin.disertatie.map.presentation.action.MapAction
 import com.madalin.disertatie.map.presentation.action.TrailAction
 import com.madalin.disertatie.map.presentation.components.ExtremePointType
-import com.madalin.disertatie.map.presentation.components.LocationNotAvailableBanner
 import com.madalin.disertatie.map.presentation.components.TrailEndDialog
 import com.madalin.disertatie.map.presentation.components.TrailExtremePointMarker
 import com.madalin.disertatie.map.presentation.components.TrailPointInfoMarker
 import com.madalin.disertatie.map.presentation.components.TrailPointInfoModal
+import com.madalin.disertatie.map.presentation.components.UnavailableLocationBanner
 import com.madalin.disertatie.map.presentation.components.UserMarker
 import com.madalin.disertatie.map.presentation.components.icons.rememberLineEndCircle
 import com.madalin.disertatie.map.presentation.components.icons.rememberLineStartCircle
@@ -154,7 +154,10 @@ fun MapScreen(
         )
     }
 
-    LocationNotAvailableBanner(
+    UnavailableLocationBanner(
+        modifier = Modifier
+            .padding(Dimens.container)
+            .statusBarsPadding(),
         isVisible = !uiState.isLocationAvailable,
         onEnableLocationClick = enableLocationSettingsLambda
     )
