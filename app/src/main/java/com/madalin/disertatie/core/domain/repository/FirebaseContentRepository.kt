@@ -60,24 +60,24 @@ interface FirebaseContentRepository {
     suspend fun getFullTrailById(trailId: String): TrailResult
 
     /**
-     * Retrieves the trails that match the given [query] as a [TrailsListResult].
+     * Retrieves the public trails that match the given [query] as a [TrailsListResult].
      */
-    suspend fun getTrailsByQuery(query: String): TrailsListResult
+    suspend fun getPublicTrailsByQuery(query: String): TrailsListResult
 
     /**
-     * Retrieves the trails that are at most [minDistance] meters away from the given [location] and
-     * their distances from [location] as a [TrailsListResult].
+     * Retrieves the public trails that are at most [minDistance] meters away from the given
+     * [location] and their distances from [location] as a [TrailsListResult].
      */
-    suspend fun getNearbyTrailsByLocation(location: Location, minDistance: Int): TrailsListResult
+    suspend fun getPublicNearbyTrailsByLocation(location: Location, minDistance: Int): TrailsListResult
 
     /**
-     * Retrieves the trails that are at most [minDistance] meters away from the given [location] and
-     * their trail points as a [TrailsListResult].
+     * Retrieves the public trails that are at most [minDistance] meters away from the given
+     * [location] and their trail points as a [TrailsListResult].
      */
-    suspend fun getNearbyTrailsWithPointsByLocation(location: Location, minDistance: Int): TrailsListResult
+    suspend fun getPublicNearbyTrailsWithPointsByLocation(location: Location, minDistance: Int): TrailsListResult
 
     /**
-     * Retrieves a [limited][limit] number of trails as a [TrailsListResult].
+     * Retrieves a [limited][limit] number of public trails as a [TrailsListResult].
      */
-    suspend fun getTrailsWithLimit(limit: Long): TrailsListResult
+    suspend fun getPublicTrailsWithLimit(limit: Long): TrailsListResult
 }

@@ -85,7 +85,7 @@ class DiscoverViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingNearbyTrails = true) }
 
-            val result = async { firebaseContentRepository.getNearbyTrailsByLocation(currentUserLocation, NEARBY_TRAIL_MIN_DISTANCE) }.await()
+            val result = async { firebaseContentRepository.getPublicNearbyTrailsByLocation(currentUserLocation, NEARBY_TRAIL_MIN_DISTANCE) }.await()
             hasSearchedForNearbyTrails = true // first time fetched
 
             when (result) {
@@ -120,7 +120,7 @@ class DiscoverViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingTrails = true) }
 
-            val response = async { firebaseContentRepository.getTrailsWithLimit(limit) }.await()
+            val response = async { firebaseContentRepository.getPublicTrailsWithLimit(limit) }.await()
             when (response) {
                 is TrailsListResult.Success -> _uiState.update {
                     it.copy(
@@ -156,7 +156,7 @@ class DiscoverViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSearchingTrails = true) }
 
-            val response = async { firebaseContentRepository.getTrailsByQuery(formattedQuery) }.await()
+            val response = async { firebaseContentRepository.getPublicTrailsByQuery(formattedQuery) }.await()
             when (response) {
                 is TrailsListResult.Success -> {
                     _uiState.update {

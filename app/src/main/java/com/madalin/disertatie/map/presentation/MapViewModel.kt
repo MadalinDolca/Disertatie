@@ -952,7 +952,7 @@ class MapViewModel(
 
         viewModelScope.launch {
             val result = async {
-                firebaseContentRepository.getNearbyTrailsWithPointsByLocation(
+                firebaseContentRepository.getPublicNearbyTrailsWithPointsByLocation(
                     currentUserLocation, NEARBY_TRAIL_MIN_DISTANCE
                 )
             }.await()

@@ -168,8 +168,8 @@ class FirebaseContentRepositoryImpl(
         }
     }
 
-    override suspend fun getTrailsByQuery(query: String): TrailsListResult {
-        val colRef = firestore.collection(CollectionPath.TRAILS)
+    override suspend fun getPublicTrailsByQuery(query: String): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS).whereEqualTo("public", true)
 
         try {
             val trails = colRef.get().await().toObjects<Trail>()
@@ -183,8 +183,8 @@ class FirebaseContentRepositoryImpl(
         }
     }
 
-    override suspend fun getNearbyTrailsByLocation(location: Location, minDistance: Int): TrailsListResult {
-        val colRef = firestore.collection(CollectionPath.TRAILS)
+    override suspend fun getPublicNearbyTrailsByLocation(location: Location, minDistance: Int): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS).whereEqualTo("public", true)
 
         try {
             val trails = colRef.get().await().toObjects<Trail>()
@@ -214,11 +214,11 @@ class FirebaseContentRepositoryImpl(
         }
     }
 
-    override suspend fun getNearbyTrailsWithPointsByLocation(location: Location, minDistance: Int): TrailsListResult {
+    override suspend fun getPublicNearbyTrailsWithPointsByLocation(location: Location, minDistance: Int): TrailsListResult {
         val colRef = firestore.collection(CollectionPath.TRAILS)
 
         try {
-            val trails = colRef.get().await().toObjects<Trail>()
+            val trails = colRef.whereEqualTo("public", true).get().await().toObjects<Trail>()
             val nearbyTrails = mutableListOf<Trail>()
 
             // selects nearby trails and saves distances
@@ -248,8 +248,8 @@ class FirebaseContentRepositoryImpl(
         }
     }
 
-    override suspend fun getTrailsWithLimit(limit: Long): TrailsListResult {
-        val colRef = firestore.collection(CollectionPath.TRAILS)
+    override suspend fun getPublicTrailsWithLimit(limit: Long): TrailsListResult {
+        val colRef = firestore.collection(CollectionPath.TRAILS).whereEqualTo("public", true)
         val query = colRef.limit(limit)
 
         try {
