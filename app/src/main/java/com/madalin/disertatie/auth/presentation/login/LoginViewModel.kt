@@ -9,7 +9,6 @@ import com.madalin.disertatie.auth.domain.validation.AuthValidator
 import com.madalin.disertatie.auth.presentation.actions.LoginAction
 import com.madalin.disertatie.core.domain.action.GlobalAction
 import com.madalin.disertatie.core.presentation.GlobalDriver
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import kotlinx.coroutines.async
@@ -32,7 +31,6 @@ class LoginViewModel(
         when (action) {
             is LoginAction.DoLogin -> login(action.email, action.password)
             LoginAction.ResetLoginStatus -> resetLoginStatus()
-            LoginAction.HideStatusBanner -> hideStatusBanner()
         }
     }
 
@@ -52,11 +50,19 @@ class LoginViewModel(
             val result = async { repository.signInWithEmailAndPassword(_email, _password) }.await()
             when (result) {
                 LoginResult.Success -> handleLoginResult()
-                LoginResult.InvalidCredentials -> updateStateUponFailure(UiText.Resource(R.string.invalid_credentials))
-                LoginResult.UserNotFound -> updateStateUponFailure(UiText.Resource(R.string.user_not_found))
-                is LoginResult.Error -> updateStateUponFailure(
-                    if (result.message != null) UiText.Dynamic(result.message)
-                    else UiText.Resource(R.string.login_error)
+                LoginResult.InvalidCredentials -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Error, UiText.Resource(R.string.invalid_credentials))
+                )
+
+                LoginResult.UserNotFound -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Error, UiText.Resource(R.string.user_not_found))
+                )
+
+                is LoginResult.Error -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(
+                        StatusBannerType.Error,
+                        if (result.message != null) UiText.Dynamic(result.message) else UiText.Resource(R.string.login_error)
+                    )
                 )
             }
         }
@@ -98,32 +104,12 @@ class LoginViewModel(
      */
     private fun handleLoginResult() {
         if (repository.isEmailVerified()) {
+            globalDriver.onAction(GlobalAction.SetUserLoginStatus(true))
             _uiState.update { it.copy(isLoginOperationComplete = true) }
-            globalDriver.handleAction(GlobalAction.SetUserLoginStatus(true))
         } else {
             repository.sendEmailVerification()
-            _uiState.update {
-                it.copy(
-                    isLoginOperationComplete = false,
-                    isStatusBannerVisible = true,
-                    statusBannerData = StatusBannerData(
-                        StatusBannerType.Info,
-                        UiText.Resource(R.string.check_your_email_to_confirm_your_account)
-                    )
-                )
-            }
-        }
-    }
-
-    /**
-     * Updates the state upon a registration failure with the given [UiText] message.
-     */
-    private fun updateStateUponFailure(text: UiText) {
-        _uiState.update {
-            it.copy(
-                isStatusBannerVisible = true,
-                statusBannerData = StatusBannerData(StatusBannerType.Error, text)
-            )
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Info, UiText.Resource(R.string.check_your_email_to_confirm_your_account)))
+            _uiState.update { it.copy(isLoginOperationComplete = false) }
         }
     }
 
@@ -133,12 +119,5 @@ class LoginViewModel(
      */
     private fun resetLoginStatus() {
         _uiState.update { it.copy(isLoginOperationComplete = false) }
-    }
-
-    /**
-     * Hides the status banner.
-     */
-    private fun hideStatusBanner() {
-        _uiState.update { it.copy(isStatusBannerVisible = false) }
     }
 }

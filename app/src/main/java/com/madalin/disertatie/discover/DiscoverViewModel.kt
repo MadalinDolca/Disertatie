@@ -9,7 +9,6 @@ import com.madalin.disertatie.core.domain.result.TrailsListResult
 import com.madalin.disertatie.core.domain.util.NEARBY_TRAIL_MIN_DISTANCE
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.discover.action.DiscoverAction
@@ -78,7 +77,7 @@ class DiscoverViewModel(
         }
 
         if (_uiState.value.isLoadingNearbyTrails) {
-            showStatusBanner(StatusBannerType.Info, R.string.already_looking_for_nearby_trails_please_wait)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Info, R.string.already_looking_for_nearby_trails_please_wait))
             return
         }
 
@@ -100,7 +99,7 @@ class DiscoverViewModel(
                 }
 
                 is TrailsListResult.Error -> {
-                    showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_the_nearby_trails)
+                    globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_the_nearby_trails))
                     _uiState.update {
                         it.copy(
                             isLoadingNearbyTrails = false,
@@ -183,19 +182,5 @@ class DiscoverViewModel(
                 }
             }
         }
-    }
-
-    /**
-     * Shows a [global][GlobalDriver] status banner with this [type] and [text] message or resource ID.
-     */
-    private fun showStatusBanner(type: StatusBannerType, text: Any) {
-        val uiText = when (text) {
-            is String -> UiText.Dynamic(text)
-            is Int -> UiText.Resource(text)
-            else -> UiText.Empty
-        }
-
-        globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, uiText)))
-        globalDriver.handleAction(GlobalAction.ShowStatusBanner)
     }
 }

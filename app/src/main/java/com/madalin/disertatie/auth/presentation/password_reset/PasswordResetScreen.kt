@@ -28,7 +28,6 @@ import com.madalin.disertatie.auth.presentation.actions.PasswordResetAction
 import com.madalin.disertatie.auth.presentation.components.EmailField
 import com.madalin.disertatie.core.presentation.components.AppClickableText
 import com.madalin.disertatie.core.presentation.components.AppFilledButton
-import com.madalin.disertatie.core.presentation.components.StatusBanner
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.presentation.util.UiText
 import org.koin.androidx.compose.koinViewModel
@@ -81,10 +80,4 @@ fun PasswordResetScreen(
             modifier = Modifier.navigationBarsPadding()
         )
     }
-
-    StatusBanner(
-        isVisible = uiState.isStatusBannerVisible,
-        data = uiState.statusBannerData,
-        onDismiss = { viewModel.handleAction(PasswordResetAction.HideStatusBanner) }
-    )
 }

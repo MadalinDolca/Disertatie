@@ -51,9 +51,9 @@ val appModule = module {
 
 val viewModelModule = module {
     viewModel { MainActivityViewModel(get()) }
-    viewModel { RegisterViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
-    viewModel { PasswordResetViewModel(get()) }
+    viewModel { RegisterViewModel(get(), get()) }
+    viewModel { PasswordResetViewModel(get(), get()) }
     viewModel { HomeViewModel(get()) }
     viewModel { MapViewModel(get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get()) }

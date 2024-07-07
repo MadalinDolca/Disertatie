@@ -16,7 +16,6 @@ import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.navigation.TrailInfoDest
 import com.madalin.disertatie.core.presentation.util.UiText
@@ -94,7 +93,7 @@ class TrailInfoViewModel(
     private fun getTrailInfo() {
         val id = trailId
         if (id == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided))
             return
         }
 
@@ -138,7 +137,7 @@ class TrailInfoViewModel(
     private fun getTrailPoints() {
         val id = trailId
         if (id == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided))
             return
         }
 
@@ -177,7 +176,7 @@ class TrailInfoViewModel(
     private fun getTrailImages() {
         val id = trailId
         if (id == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided))
             return
         }
 
@@ -228,8 +227,13 @@ class TrailInfoViewModel(
             val result = async { firebaseContentRepository.updateTrailById(id, newData) }.await()
 
             when (result) {
-                TrailUpdateResult.Success -> showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_updated)
-                is TrailUpdateResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_update_trail)
+                TrailUpdateResult.Success -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.trail_has_been_updated)
+                )
+
+                is TrailUpdateResult.Error -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_update_trail)
+                )
             }
         }
     }
@@ -248,24 +252,15 @@ class TrailInfoViewModel(
             val result = async { firebaseContentRepository.deleteTrailById(id) }.await()
 
             when (result) {
-                TrailDeleteResult.Success -> showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_deleted)
-                is TrailDeleteResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_delete_trail)
+                TrailDeleteResult.Success -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.trail_has_been_deleted)
+                )
+
+                is TrailDeleteResult.Error -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_delete_trail)
+                )
             }
         }
-    }
-
-    /**
-     * Shows a [global][GlobalDriver] status banner with this [type] and [text] message or resource ID.
-     */
-    private fun showStatusBanner(type: StatusBannerType, text: Any) {
-        val uiText = when (text) {
-            is String -> UiText.Dynamic(text)
-            is Int -> UiText.Resource(text)
-            else -> UiText.Empty
-        }
-
-        globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, uiText)))
-        globalDriver.handleAction(GlobalAction.ShowStatusBanner)
     }
 
     /**
@@ -278,7 +273,7 @@ class TrailInfoViewModel(
             return
         }
 
-        globalDriver.handleAction(GlobalAction.SetLaunchedTrailId(id))
+        globalDriver.onAction(GlobalAction.SetLaunchedTrailId(id))
     }
 
     /**

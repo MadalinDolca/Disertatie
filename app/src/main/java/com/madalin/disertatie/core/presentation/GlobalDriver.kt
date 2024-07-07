@@ -35,15 +35,14 @@ class GlobalDriver(
     /**
      * Determines the global [action] type and calls the appropriate handle method.
      */
-    fun handleAction(action: GlobalAction) = runBlocking {
+    fun onAction(action: GlobalAction) = runBlocking {
         withContext(dispatcher) {
             when (action) {
                 is GlobalAction.SetUserLoginStatus -> toggleUserLoginStatus(action.isLoggedIn)
                 is GlobalAction.SetUserLocation -> setUserLocation(action.location)
                 GlobalAction.ListenForUserData -> listenForUserData()
-                is GlobalAction.SetStatusBannerData -> setStatusBannerData(action.data)
-                GlobalAction.ShowStatusBanner -> toggleStatusBannerVisibility(true)
-                GlobalAction.HideStatusBanner -> toggleStatusBannerVisibility(false)
+                is GlobalAction.ShowStatusBanner -> showStatusBanner(action.type, action.text)
+                GlobalAction.HideStatusBanner -> hideStatusBanner()
                 is GlobalAction.SetLaunchedTrailId -> setLaunchedTrailId(action.id)
                 GlobalAction.DeleteLaunchedTrailId -> deleteLaunchedTrailId()
             }
@@ -124,17 +123,33 @@ class GlobalDriver(
     }
 
     /**
-     * Sets the status banner data to the given [data].
+     * Shows the status banner with the given [type] and [text].
      */
-    private fun setStatusBannerData(data: StatusBannerData) {
-        _state.update { it.copy(statusBannerData = data) }
+    private fun showStatusBanner(type: StatusBannerType, text: Any) {
+        val uiText = when (text) {
+            is String -> UiText.Dynamic(text)
+            is Int -> UiText.Resource(text)
+            else -> UiText.Empty
+        }
+
+        _state.update {
+            it.copy(
+                isStatusBannerVisible = true,
+                statusBannerData = StatusBannerData(type, uiText)
+            )
+        }
     }
 
     /**
-     * Sets the status banner visibility to the given [isVisible] state.
+     * Hides the status banner and clears its content.
      */
-    private fun toggleStatusBannerVisibility(isVisible: Boolean) {
-        _state.update { it.copy(isStatusBannerVisible = isVisible) }
+    private fun hideStatusBanner() {
+        _state.update {
+            it.copy(
+                isStatusBannerVisible = false,
+                //statusBannerData = StatusBannerData(StatusBannerType.Info, UiText.Empty)
+            )
+        }
     }
 
     /**
@@ -143,6 +158,7 @@ class GlobalDriver(
     private fun toggleUserLoginStatus(isLoggedIn: Boolean) {
         if (isLoggedIn) {
             _state.update { it.copy(isUserLoggedIn = true) }
+            startListeningForUserData()
         } else {
             userRepository.signOut(
                 onSuccess = {

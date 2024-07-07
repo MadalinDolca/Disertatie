@@ -11,7 +11,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
@@ -53,7 +52,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DisertatieApp(viewModel: MainActivityViewModel) {
     val uiState by viewModel.state.collectAsState() //.collectAsStateWithLifecycle()
-    val setStatusBannerVisibilityLambda = remember { { viewModel.setStatusBannerVisibility(false) } }
 
     if (!uiState.isSplashScreenVisible) {
         val navController = rememberNavController()
@@ -68,7 +66,7 @@ fun DisertatieApp(viewModel: MainActivityViewModel) {
     StatusBanner(
         isVisible = uiState.isStatusBannerVisible,
         data = uiState.statusBannerData,
-        onDismiss = setStatusBannerVisibilityLambda,
+        onDismiss = viewModel::hideStatusBanner,
         modifier = Modifier
             .fillMaxWidth()
             .padding(Dimens.container)

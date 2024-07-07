@@ -8,9 +8,7 @@ import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.result.TrailsListResult
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
-import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.profile.presentation.action.ProfileAction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,7 +61,9 @@ class ProfileViewModel(
                     .collect { result ->
                         when (result) {
                             is TrailsListResult.Success -> _uiState.update { it.copy(userTrails = result.trails) }
-                            is TrailsListResult.Error -> showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_load_trails)
+                            is TrailsListResult.Error -> globalDriver.onAction(
+                                GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_load_trails)
+                            )
                         }
                     }
             }
@@ -72,23 +72,9 @@ class ProfileViewModel(
     }
 
     /**
-     * Shows a [global][GlobalDriver] status banner with this [type] and [text] message or resource ID.
-     */
-    private fun showStatusBanner(type: StatusBannerType, text: Any) {
-        val uiText = when (text) {
-            is String -> UiText.Dynamic(text)
-            is Int -> UiText.Resource(text)
-            else -> UiText.Empty
-        }
-
-        globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, uiText)))
-        globalDriver.handleAction(GlobalAction.ShowStatusBanner)
-    }
-
-    /**
      * Logs out the current user.
      */
     private fun logout() {
-        globalDriver.handleAction(GlobalAction.SetUserLoginStatus(false))
+        globalDriver.onAction(GlobalAction.SetUserLoginStatus(false))
     }
 }

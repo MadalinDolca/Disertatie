@@ -32,7 +32,6 @@ import com.madalin.disertatie.auth.presentation.components.EmailField
 import com.madalin.disertatie.auth.presentation.components.PasswordField
 import com.madalin.disertatie.core.presentation.components.AppClickableText
 import com.madalin.disertatie.core.presentation.components.AppFilledButton
-import com.madalin.disertatie.core.presentation.components.StatusBanner
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.presentation.util.UiText
 import org.koin.androidx.compose.koinViewModel
@@ -108,10 +107,4 @@ fun LoginScreen(
             modifier = Modifier.navigationBarsPadding()
         )
     }
-
-    StatusBanner(
-        isVisible = uiState.isStatusBannerVisible,
-        data = uiState.statusBannerData,
-        onDismiss = { viewModel.handleAction(LoginAction.HideStatusBanner) }
-    )
 }

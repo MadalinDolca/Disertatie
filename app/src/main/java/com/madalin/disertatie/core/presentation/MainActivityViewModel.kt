@@ -29,7 +29,7 @@ class MainActivityViewModel(
             _state.update { it.copy(isSplashScreenVisible = false) }
         }
 
-        globalDriver.handleAction(GlobalAction.ListenForUserData)
+        globalDriver.onAction(GlobalAction.ListenForUserData)
     }
 
     private fun GlobalState.reduce() {
@@ -42,8 +42,7 @@ class MainActivityViewModel(
         }
     }
 
-    fun setStatusBannerVisibility(isVisible: Boolean) {
-        if (isVisible) globalDriver.handleAction(GlobalAction.ShowStatusBanner)
-        else globalDriver.handleAction(GlobalAction.HideStatusBanner)
+    fun hideStatusBanner() {
+        globalDriver.onAction(GlobalAction.HideStatusBanner)
     }
 }

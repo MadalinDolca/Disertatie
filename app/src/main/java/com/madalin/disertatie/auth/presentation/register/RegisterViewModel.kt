@@ -8,8 +8,9 @@ import com.madalin.disertatie.auth.domain.result.AccountDataStorageResult
 import com.madalin.disertatie.auth.domain.result.RegisterResult
 import com.madalin.disertatie.auth.domain.validation.AuthValidator
 import com.madalin.disertatie.auth.presentation.actions.RegisterAction
+import com.madalin.disertatie.core.domain.action.GlobalAction
 import com.madalin.disertatie.core.domain.model.User
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
+import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.components.StatusDialogData
 import com.madalin.disertatie.core.presentation.components.StatusDialogType
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
+    private val globalDriver: GlobalDriver,
     private val repository: FirebaseAuthRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -34,7 +36,6 @@ class RegisterViewModel(
         when (action) {
             is RegisterAction.DoRegistration -> register(action.email, action.password, action.confirmPassword)
             RegisterAction.ResetRegistrationStatus -> resetRegistrationStatus()
-            RegisterAction.HideStatusBanner -> hideStatusBanner()
             RegisterAction.HideStatusDialog -> hideStatusDialog()
         }
     }
@@ -63,18 +64,15 @@ class RegisterViewModel(
 
             val result = async { repository.createUserWithEmailAndPassword(_email, _password) }.await()
             when (result) {
-                // TODO what if the user is null?
+                // TODO handle null firebase user
                 is RegisterResult.Success -> result.firebaseUser?.let { // if the current user is not null
                     storeUserToFirestore(User(id = it.uid, email = _email))
                 }
 
-                RegisterResult.InvalidEmail -> updateStateUponFailure(UiText.Resource(R.string.email_is_invalid))
-                RegisterResult.InvalidCredentials -> updateStateUponFailure(UiText.Resource(R.string.invalid_credentials))
-                RegisterResult.EmailIsTaken -> updateStateUponFailure(UiText.Resource(R.string.email_is_taken))
-                is RegisterResult.Error -> updateStateUponFailure(
-                    if (result.message != null) UiText.Dynamic(result.message)
-                    else UiText.Resource(R.string.error_creating_account)
-                )
+                RegisterResult.InvalidEmail -> updateStateUponFailure(R.string.email_is_invalid)
+                RegisterResult.InvalidCredentials -> updateStateUponFailure(R.string.invalid_credentials)
+                RegisterResult.EmailIsTaken -> updateStateUponFailure(R.string.email_is_taken)
+                is RegisterResult.Error -> updateStateUponFailure(result.message ?: R.string.error_creating_account)
             }
         }
     }
@@ -141,37 +139,34 @@ class RegisterViewModel(
                 }
 
                 is AccountDataStorageResult.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isStatusDialogVisible = false, // dismiss the dialog
-                            isStatusBannerVisible = true, // shows the banner
-                            statusBannerData = StatusBannerData(
-                                StatusBannerType.Error,
-                                if (result.message != null) {
-                                    UiText.Dynamic(result.message)
-                                } else {
-                                    UiText.Resource(R.string.data_recording_error)
-                                }
-                            )
+                    // hides the status dialog
+                    _uiState.update { it.copy(isStatusDialogVisible = false) }
+
+                    // shows the status banner
+                    globalDriver.onAction(
+                        GlobalAction.ShowStatusBanner(
+                            StatusBannerType.Error,
+                            if (result.message != null) UiText.Dynamic(result.message) else UiText.Resource(R.string.data_recording_error)
                         )
-                    }
+                    )
                 }
             }
         }
     }
 
     /**
-     * Updates the state upon a registration failure with the given [UiText] message.
+     * Updates the state upon a registration failure with the given message.
      */
-    private fun updateStateUponFailure(text: UiText) {
+    private fun updateStateUponFailure(message: Any) {
         _uiState.update { currentState ->
             currentState.copy(
                 isRegisterOperationComplete = false,
-                isStatusDialogVisible = false, // dismiss the dialog
-                isStatusBannerVisible = true, // show the banner
-                statusBannerData = StatusBannerData(StatusBannerType.Error, text)
+                isStatusDialogVisible = false // hides the status dialog
             )
         }
+
+        // shows the status banner
+        globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, message))
     }
 
     /**
@@ -180,13 +175,6 @@ class RegisterViewModel(
      */
     private fun resetRegistrationStatus() {
         _uiState.update { it.copy(isRegisterOperationComplete = false) }
-    }
-
-    /**
-     * Hides the status banner.
-     */
-    private fun hideStatusBanner() {
-        _uiState.update { it.copy(isStatusBannerVisible = false) }
     }
 
     /**

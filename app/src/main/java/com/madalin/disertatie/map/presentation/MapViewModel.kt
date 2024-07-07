@@ -31,7 +31,6 @@ import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.domain.validation.TrailValidator
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import com.madalin.disertatie.map.domain.DefaultLocationClient
@@ -145,7 +144,7 @@ class MapViewModel(
     private fun handleLocationAction(action: LocationAction) {
         when (action) {
             is LocationAction.SettingResultEnabled -> {
-                showStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled)
+                globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.device_location_has_been_enabled))
                 setLocationAvailability(true)
                 startLocationFetching(action.context)
             }
@@ -313,7 +312,7 @@ class MapViewModel(
      */
     private fun updateUserLocation(location: Location) {
         Log.d("MapViewModel", "updateUserLocation: $location")
-        globalDriver.handleAction(GlobalAction.SetUserLocation(location))
+        globalDriver.onAction(GlobalAction.SetUserLocation(location))
     }
 
     /**
@@ -333,7 +332,7 @@ class MapViewModel(
         val currentUserLocation = _uiState.value.currentUserLocation
 
         if (!isLocationAvailable || currentUserLocation == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.enable_location)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.enable_location))
             return
         }
 
@@ -348,7 +347,7 @@ class MapViewModel(
 
         val userId = firebaseUserRepository.getCurrentUserId()
         if (userId == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_user_id)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_user_id))
             return
         }
 
@@ -434,7 +433,7 @@ class MapViewModel(
         // TODO add info like starting, middle and ending point, trail length, etc.
         val currentTrail = _uiState.value.currentTrail
         if (currentTrail == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_save_a_non_existent_trail)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_save_a_non_existent_trail))
             return
         }
         if (!validateTrailName(currentTrail.name)) return
@@ -450,11 +449,13 @@ class MapViewModel(
                         currentTrail = null
                     )
                 }
-                showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_saved)
+                globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.trail_has_been_saved)
+                )
             },
             onFailure = { message ->
-                if (message == null) showStatusBanner(StatusBannerType.Error, R.string.could_not_save_the_trail)
-                else showStatusBanner(StatusBannerType.Error, message)
+                if (message == null) globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_save_the_trail))
+                else globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, message))
 
                 _uiState.update { it.copy(isTrailUploading = false) }
             }
@@ -480,7 +481,7 @@ class MapViewModel(
         val currentTrail = _uiState.value.currentTrail
 
         if (currentTrail == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_add_the_current_location_to_a_non_existent_trail)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_add_the_current_location_to_a_non_existent_trail))
             return
         }
 
@@ -522,24 +523,6 @@ class MapViewModel(
                 setLocationAvailability(false)
             }
         }
-    }
-
-    /**
-     * Shows a [global][GlobalDriver] status banner with this [type] and [text] message or resource ID.
-     */
-    private fun showStatusBanner(type: StatusBannerType, text: Any) {
-        val uiText = when (text) {
-            is String -> UiText.Dynamic(text)
-            is Int -> UiText.Resource(text)
-            else -> UiText.Empty
-        }
-
-        globalDriver.handleAction(GlobalAction.SetStatusBannerData(StatusBannerData(type, uiText)))
-        globalDriver.handleAction(GlobalAction.ShowStatusBanner)
-    }
-
-    fun hideStatusBanner() {
-        globalDriver.handleAction(GlobalAction.HideStatusBanner)
     }
 
     /**
@@ -622,13 +605,13 @@ class MapViewModel(
     private fun showTrailPointInfoModal(trailPoint: TrailPoint? = null) {
         val currentTrail = _uiState.value.currentTrail
         if (currentTrail == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_show_the_trail_point_info_of_a_non_existent_trail)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_show_the_trail_point_info_of_a_non_existent_trail))
             return
         }
 
         val selectedPoint = trailPoint ?: currentTrail.trailPointsList.lastOrNull()
         if (selectedPoint == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_registered_yet)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_registered_yet))
             return
         }
 
@@ -696,7 +679,7 @@ class MapViewModel(
                     }
 
                     is WeatherResult.Error -> {
-                        showStatusBanner(StatusBannerType.Error, result.message)
+                        globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.message))
                         _uiState.update { it.copy(isLoadingWeather = false) }
                     }
                 }
@@ -714,14 +697,14 @@ class MapViewModel(
 
         if (currentTrail == null || selectedTrailPoint == null) {
             onFailure()
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_update_the_trail_point)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_update_the_trail_point))
             return
         }
 
         val selectedTrailPointIndex = currentTrail.trailPointsList.indexOfFirst { it.id == selectedTrailPoint.id }
         if (selectedTrailPointIndex == -1) {
             onFailure()
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_update_the_trail_point)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_update_the_trail_point))
             return
         }
 
@@ -763,7 +746,7 @@ class MapViewModel(
                 when (result) {
                     LocationClassificationResult.Loading -> {}
                     is LocationClassificationResult.Success -> updateSTPImageClassifications(newImage, result.data)
-                    is LocationClassificationResult.Error -> showStatusBanner(StatusBannerType.Error, result.message)
+                    is LocationClassificationResult.Error -> globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.message))
                 }
             }
             .launchIn(viewModelScope)
@@ -811,7 +794,7 @@ class MapViewModel(
         val suggestionDialogState = _uiState.value.suggestionDialogState
 
         if (selectedTrailPoint == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_selected_yet)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.no_trail_point_has_been_selected_yet))
             return
         }
 
@@ -835,7 +818,7 @@ class MapViewModel(
                     }
 
                     is SuggestionResult.Error -> {
-                        showStatusBanner(StatusBannerType.Error, R.string.could_not_make_suggestions)
+                        globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_make_suggestions))
                         setIsSuggestionLoading(false)
                     }
                 }
@@ -862,7 +845,7 @@ class MapViewModel(
 
         val launchedTrailId = _uiState.value.launchedTrailId
         if (launchedTrailId == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.no_trail_id_has_been_provided))
             return
         }
 
@@ -872,7 +855,7 @@ class MapViewModel(
             val result = async { firebaseContentRepository.getFullTrailById(launchedTrailId) }.await()
             when (result) {
                 is TrailResult.Success -> {
-                    showStatusBanner(StatusBannerType.Success, R.string.trail_has_been_loaded)
+                    globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.trail_has_been_loaded))
                     _uiState.update {
                         it.copy(
                             isLoadingLaunchedTrail = false,
@@ -884,12 +867,12 @@ class MapViewModel(
                 }
 
                 TrailResult.TrailNotFound -> {
-                    showStatusBanner(StatusBannerType.Error, R.string.trail_not_found)
+                    globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.trail_not_found))
                     _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
                 }
 
                 is TrailResult.Error -> {
-                    showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_trail)
+                    globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_trail))
                     _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
                 }
             }
@@ -904,7 +887,7 @@ class MapViewModel(
             )
         }
         moveCameraToUserLocation()
-        globalDriver.handleAction(GlobalAction.DeleteLaunchedTrailId)
+        globalDriver.onAction(GlobalAction.DeleteLaunchedTrailId)
     }
 
     /**
@@ -920,7 +903,7 @@ class MapViewModel(
     private fun moveCameraToLaunchedTrailStartingPoint() {
         val trail = _uiState.value.currentTrail
         if (trail == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_move_camera_to_a_non_existent_trail)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_move_camera_to_a_non_existent_trail))
             return
         }
 
@@ -933,7 +916,7 @@ class MapViewModel(
     private fun moveCameraToLaunchedTrailEndingPoint() {
         val trail = _uiState.value.currentTrail
         if (trail == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.can_not_move_camera_to_a_non_existent_trail)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_move_camera_to_a_non_existent_trail))
             return
         }
 
@@ -946,7 +929,7 @@ class MapViewModel(
     private fun getNearbyTrails() {
         val currentUserLocation = _uiState.value.currentUserLocation
         if (currentUserLocation == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_nearby_trails_because_the_user_location_is_null)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_nearby_trails_because_the_user_location_is_null))
             return
         }
 
@@ -961,7 +944,7 @@ class MapViewModel(
                 is TrailsListResult.Success -> _uiState.update { it.copy(nearbyTrails = result.trails) }
 
                 is TrailsListResult.Error -> {
-                    showStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_the_nearby_trails)
+                    globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.error ?: R.string.could_not_get_the_nearby_trails))
                     _uiState.update { it.copy(nearbyTrails = emptyList()) }
                 }
             }
@@ -974,7 +957,7 @@ class MapViewModel(
     private fun showNearbyTrails() {
         val userLocation = _uiState.value.currentUserLocation
         if (userLocation == null) {
-            showStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_nearby_trails_because_the_user_location_is_null)
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_get_the_nearby_trails_because_the_user_location_is_null))
             return
         }
 

@@ -7,7 +7,8 @@ import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
 import com.madalin.disertatie.auth.domain.result.PasswordResetResult
 import com.madalin.disertatie.auth.domain.validation.AuthValidator
 import com.madalin.disertatie.auth.presentation.actions.PasswordResetAction
-import com.madalin.disertatie.core.presentation.components.StatusBannerData
+import com.madalin.disertatie.core.domain.action.GlobalAction
+import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 import kotlinx.coroutines.async
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PasswordResetViewModel(
+    private val globalDriver: GlobalDriver,
     private val repository: FirebaseAuthRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PasswordResetUiState())
@@ -28,7 +30,6 @@ class PasswordResetViewModel(
     fun handleAction(action: PasswordResetAction) {
         when (action) {
             is PasswordResetAction.ResetPassword -> resetPassword(action.email)
-            PasswordResetAction.HideStatusBanner -> hideStatusBanner()
         }
     }
 
@@ -45,25 +46,19 @@ class PasswordResetViewModel(
         viewModelScope.launch {
             val result = async { repository.resetPassword(_email) }.await()
             when (result) {
-                is PasswordResetResult.Success -> _uiState.update {
-                    it.copy(
-                        isStatusBannerVisible = true,
-                        statusBannerData = StatusBannerData(
-                            StatusBannerType.Success,
-                            UiText.Resource(R.string.a_password_reset_link_has_been_sent_to_x, result.email)
-                        )
+                is PasswordResetResult.Success -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(
+                        StatusBannerType.Success,
+                        UiText.Resource(R.string.a_password_reset_link_has_been_sent_to_x, result.email)
                     )
-                }
+                )
 
-                is PasswordResetResult.Error -> _uiState.update {
-                    it.copy(
-                        isStatusBannerVisible = true,
-                        statusBannerData = StatusBannerData(
-                            StatusBannerType.Error,
-                            UiText.Resource(R.string.something_went_wrong_please_try_again)
-                        )
+                is PasswordResetResult.Error -> globalDriver.onAction(
+                    GlobalAction.ShowStatusBanner(
+                        StatusBannerType.Error,
+                        UiText.Resource(R.string.something_went_wrong_please_try_again)
                     )
-                }
+                )
             }
         }
     }
@@ -85,12 +80,5 @@ class PasswordResetViewModel(
             )
         }
         return errors.isEmpty()
-    }
-
-    /**
-     * Hides the status banner.
-     */
-    private fun hideStatusBanner() {
-        _uiState.update { it.copy(isStatusBannerVisible = false) }
     }
 }
