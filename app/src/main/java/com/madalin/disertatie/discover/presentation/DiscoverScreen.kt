@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -20,24 +18,19 @@ import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -45,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.presentation.components.NearbyTrailCard
+import com.madalin.disertatie.core.presentation.components.SectionTitleWithRefresh
 import com.madalin.disertatie.core.presentation.components.StatusPlaceholder
 import com.madalin.disertatie.core.presentation.components.StatusPlaceholderType
 import com.madalin.disertatie.core.presentation.components.TrailBannerItem
@@ -91,13 +85,24 @@ fun DiscoverScreen(
                     errorMessage = uiState.nearbyTrailsError,
                     nearbyTrails = uiState.nearbyTrails,
                     onTrailClick = { onNavigateToTrailInfo(it) },
-                    onRefreshClick = { viewModel.handleAction(DiscoverAction.GetNearbyTrails) }
+                    onRefreshClick = { viewModel.handleAction(DiscoverAction.RefreshNearbyTrails) }
                 )
                 Spacer(modifier = Modifier.height(Dimens.separator))
             }
         }
 
         // discover trails list OR search results
+        item {
+            if (searchQuery.length < QUERY_MIN_LENGTH) {
+                SectionTitleWithRefresh(
+                    title = stringResource(R.string.trails),
+                    isLoading = uiState.isLoadingTrails,
+                    onRefreshClick = { viewModel.handleAction(DiscoverAction.RefreshLimitedTrails) },
+                    modifier = Modifier.padding(start = Dimens.container, bottom = Dimens.separator)
+                )
+            }
+        }
+
         val trails = if (searchQuery.length >= QUERY_MIN_LENGTH) uiState.searchedTrails else uiState.discoverTrails
         val lastItemBottomPadding = paddingValues.calculateBottomPadding() + Dimens.separator
         itemsIndexed(
@@ -210,30 +215,12 @@ private fun NearbyTrails(
 ) {
     Column(modifier = modifier) {
         // section title with refresh button
-        Row(
-            modifier = Modifier.padding(horizontal = Dimens.container),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.nearby_trails),
-                style = MaterialTheme.typography.titleLarge,
-            )
-
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .minimumInteractiveComponentSize()
-                        .size(20.dp)
-                )
-            } else {
-                IconButton(onClick = { onRefreshClick() }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Refresh,
-                        contentDescription = "Refresh"
-                    )
-                }
-            }
-        }
+        SectionTitleWithRefresh(
+            title = stringResource(R.string.nearby_trails),
+            isLoading = isLoading,
+            onRefreshClick = { onRefreshClick() },
+            modifier = Modifier.padding(horizontal = Dimens.container)
+        )
         Spacer(modifier = Modifier.height(Dimens.separator))
 
         // nearby trails grid

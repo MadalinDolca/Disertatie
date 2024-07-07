@@ -61,7 +61,8 @@ class DiscoverViewModel(
      */
     fun handleAction(action: DiscoverAction) {
         when (action) {
-            DiscoverAction.GetNearbyTrails -> getNearbyTrails()
+            DiscoverAction.RefreshNearbyTrails -> getNearbyTrails()
+            DiscoverAction.RefreshLimitedTrails -> getLimitedTrails()
             is DiscoverAction.Search -> searchTrails(action.query)
         }
     }

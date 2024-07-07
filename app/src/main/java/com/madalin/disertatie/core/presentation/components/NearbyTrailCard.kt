@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Straighten
+import androidx.compose.material.icons.rounded.SwipeLeftAlt
 import androidx.compose.material.icons.rounded.SwipeRightAlt
 import androidx.compose.material.icons.rounded.SwitchLeft
 import androidx.compose.material3.Card
@@ -53,7 +54,7 @@ fun NearbyTrailCard(
                         DataRow(icon = Icons.Rounded.SwipeRightAlt, text = it.prettyLength())
                     }
                     trail.distanceToEndingPoint?.let {
-                        DataRow(icon = Icons.Rounded.SwipeRightAlt, text = it.prettyLength())
+                        DataRow(icon = Icons.Rounded.SwipeLeftAlt, text = it.prettyLength())
                     }
                 }
                 Spacer(modifier = Modifier.width(Dimens.separator))
