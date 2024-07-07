@@ -5,9 +5,6 @@ import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
 
 data class PasswordResetUiState(
-    // field data
-    val email: String = "",
-
     // field error
     val emailError: UiText = UiText.Empty,
 

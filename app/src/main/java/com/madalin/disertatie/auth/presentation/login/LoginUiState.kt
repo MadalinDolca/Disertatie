@@ -7,10 +7,6 @@ import com.madalin.disertatie.core.presentation.util.UiText
 data class LoginUiState(
     val isLoginOperationComplete: Boolean = false,
 
-    // field data
-    val email: String = "",
-    val password: String = "",
-
     // field errors
     val emailError: UiText = UiText.Empty,
     val passwordError: UiText = UiText.Empty,

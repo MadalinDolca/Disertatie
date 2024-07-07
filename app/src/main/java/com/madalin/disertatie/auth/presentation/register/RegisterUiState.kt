@@ -9,15 +9,10 @@ import com.madalin.disertatie.core.presentation.util.UiText
 data class RegisterUiState(
     val isRegisterOperationComplete: Boolean = false,
 
-    // field data
-    val email: String = "",
-    val password: String = "",
-    val confirmPassword: String = "",
-
     // field errors
-    val emailError: /*EmailFieldError? = null*/UiText = UiText.Empty,
-    val passwordError: /*PasswordFieldError? = null*/UiText = UiText.Empty,
-    val confirmPasswordError: /*ConfirmPasswordFieldError? = null*/UiText = UiText.Empty,
+    val emailError: UiText = UiText.Empty,
+    val passwordError: UiText = UiText.Empty,
+    val confirmPasswordError: UiText = UiText.Empty,
 
     // status dialog
     val isStatusDialogVisible: Boolean = false,

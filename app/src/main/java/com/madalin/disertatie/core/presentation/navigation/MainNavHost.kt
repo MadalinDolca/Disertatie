@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.madalin.disertatie.auth.presentation.login.LoginScreenRoot
+import com.madalin.disertatie.auth.presentation.login.LoginScreen
 import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetScreen
 import com.madalin.disertatie.auth.presentation.register.RegisterScreen
 import com.madalin.disertatie.camera_preview.presentation.CameraPreviewScreen
@@ -39,7 +39,7 @@ fun MainNavHost(
     ) {
         // login screen
         composable(route = LoginDest.route) {
-            LoginScreenRoot(
+            LoginScreen(
                 onNavigateToRegisterClick = { navController.navigateSingleTopTo(RegisterDest.route) },
                 onNavigateToPasswordResetClick = { navController.navigateSingleTopTo(PasswordResetDest.route) }
             )

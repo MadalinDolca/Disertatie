@@ -1,21 +1,22 @@
 package com.madalin.disertatie.auth.presentation.login
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.madalin.disertatie.R
-import com.madalin.disertatie.auth.domain.failures.LoginFailure
 import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
-import com.madalin.disertatie.auth.domain.validation.EmailFieldError
-import com.madalin.disertatie.auth.domain.validation.PasswordFieldError
-import com.madalin.disertatie.auth.domain.validation.validateLoginFields
+import com.madalin.disertatie.auth.domain.result.LoginResult
+import com.madalin.disertatie.auth.domain.validation.AuthValidator
+import com.madalin.disertatie.auth.presentation.actions.LoginAction
 import com.madalin.disertatie.core.domain.action.GlobalAction
-import com.madalin.disertatie.core.domain.util.LengthConstraint
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val globalDriver: GlobalDriver,
@@ -25,10 +26,21 @@ class LoginViewModel(
     val uiState = _uiState.asStateFlow()
 
     /**
+     * Handles the given [LoginAction] by calling the appropriate handle method.
+     */
+    fun handleAction(action: LoginAction) {
+        when (action) {
+            is LoginAction.DoLogin -> login(action.email, action.password)
+            LoginAction.ResetLoginStatus -> resetLoginStatus()
+            LoginAction.HideStatusBanner -> hideStatusBanner()
+        }
+    }
+
+    /**
      * Logs in the user with the given [email] and [password] if they are valid. Checks if the
      * [email] is verified and updates [_uiState].
      */
-    fun login(email: String, password: String) {
+    private fun login(email: String, password: String) {
         val _email = email.trim()
         val _password = password.trim()
 
@@ -36,37 +48,18 @@ class LoginViewModel(
         if (!validateFields(_email, _password)) return
 
         // proceeds to login
-        repository.signInWithEmailAndPassword(_email, _password,
-            onSuccess = {
-                if (repository.isEmailVerified()) {
-                    _uiState.update { it.copy(isLoginOperationComplete = true) }
-                    globalDriver.handleAction(GlobalAction.SetUserLoginStatus(true))
-                } else {
-                    repository.sendEmailVerification()
-                    _uiState.update {
-                        it.copy(
-                            isLoginOperationComplete = false,
-                            isStatusBannerVisible = true,
-                            statusBannerData = StatusBannerData(
-                                StatusBannerType.Info,
-                                UiText.Resource(R.string.check_your_email_to_confirm_your_account)
-                            )
-                        )
-                    }
-                }
-            },
-            onFailure = { failureType ->
-                _uiState.update {
-                    it.copy(
-                        isStatusBannerVisible = true,
-                        statusBannerData = StatusBannerData(
-                            StatusBannerType.Error,
-                            determineLoginFailureMessage(failureType)
-                        )
-                    )
-                }
+        viewModelScope.launch {
+            val result = async { repository.signInWithEmailAndPassword(_email, _password) }.await()
+            when (result) {
+                LoginResult.Success -> handleLoginResult()
+                LoginResult.InvalidCredentials -> updateStateUponFailure(UiText.Resource(R.string.invalid_credentials))
+                LoginResult.UserNotFound -> updateStateUponFailure(UiText.Resource(R.string.user_not_found))
+                is LoginResult.Error -> updateStateUponFailure(
+                    if (result.message != null) UiText.Dynamic(result.message)
+                    else UiText.Resource(R.string.login_error)
+                )
             }
-        )
+        }
     }
 
     /**
@@ -74,21 +67,21 @@ class LoginViewModel(
      * @return `true` if valid, `false` otherwise
      */
     private fun validateFields(email: String, password: String): Boolean {
-        val errors = validateLoginFields(email, password)
+        val errors = AuthValidator.validateLoginFields(email, password)
 
         _uiState.update { currentState ->
             currentState.copy(
-                emailError = when (errors.find { it is EmailFieldError } as? EmailFieldError) {
-                    EmailFieldError.NoEmailProvided -> UiText.Resource(R.string.email_cant_be_empty)
-                    EmailFieldError.InvalidEmail -> UiText.Resource(R.string.email_is_invalid)
+                emailError = when (errors.find { it is AuthValidator.EmailResult } as? AuthValidator.EmailResult) {
+                    AuthValidator.EmailResult.NoEmailProvided -> UiText.Resource(R.string.email_cant_be_empty)
+                    AuthValidator.EmailResult.InvalidEmail -> UiText.Resource(R.string.email_is_invalid)
                     null -> UiText.Empty
                 },
-                passwordError = when (errors.find { it is PasswordFieldError } as? PasswordFieldError) {
-                    PasswordFieldError.NoPasswordProvided -> UiText.Resource(R.string.password_cant_be_empty)
-                    PasswordFieldError.InvalidPasswordLength -> UiText.Resource(
+                passwordError = when (errors.find { it is AuthValidator.PasswordResult } as? AuthValidator.PasswordResult) {
+                    AuthValidator.PasswordResult.NoPasswordProvided -> UiText.Resource(R.string.password_cant_be_empty)
+                    AuthValidator.PasswordResult.InvalidPasswordLength -> UiText.Resource(
                         R.string.password_must_be_between_x_and_y_characters,
-                        LengthConstraint.MIN_PASSWORD_LENGTH,
-                        LengthConstraint.MAX_PASSWORD_LENGTH
+                        AuthValidator.MIN_PASSWORD_LENGTH,
+                        AuthValidator.MAX_PASSWORD_LENGTH
                     )
 
                     null -> UiText.Empty
@@ -100,34 +93,52 @@ class LoginViewModel(
     }
 
     /**
-     * Determines the [failureType] and returns the specific [UiText] message.
+     * Sends a verification email if the email is not verified, otherwise sets the login status
+     * to `true`.
      */
-    private fun determineLoginFailureMessage(failureType: LoginFailure) = when (failureType) {
-        LoginFailure.InvalidCredentials -> UiText.Resource(R.string.invalid_credentials)
-        LoginFailure.UserNotFound -> UiText.Resource(R.string.user_not_found)
-        is LoginFailure.Error -> {
-            if (failureType.message != null) UiText.Dynamic(failureType.message)
-            else UiText.Resource(R.string.login_error)
+    private fun handleLoginResult() {
+        if (repository.isEmailVerified()) {
+            _uiState.update { it.copy(isLoginOperationComplete = true) }
+            globalDriver.handleAction(GlobalAction.SetUserLoginStatus(true))
+        } else {
+            repository.sendEmailVerification()
+            _uiState.update {
+                it.copy(
+                    isLoginOperationComplete = false,
+                    isStatusBannerVisible = true,
+                    statusBannerData = StatusBannerData(
+                        StatusBannerType.Info,
+                        UiText.Resource(R.string.check_your_email_to_confirm_your_account)
+                    )
+                )
+            }
         }
     }
 
     /**
-     * Sets [login operation status][LoginUiState.isLoginOperationComplete] to [status].
-     * @param status `true` if user is signed in, `false` otherwise
+     * Updates the state upon a registration failure with the given [UiText] message.
      */
-    fun setLoginOperationStatus(status: Boolean) {
-        _uiState.update { it.copy(isLoginOperationComplete = status) }
+    private fun updateStateUponFailure(text: UiText) {
+        _uiState.update {
+            it.copy(
+                isStatusBannerVisible = true,
+                statusBannerData = StatusBannerData(StatusBannerType.Error, text)
+            )
+        }
     }
 
-    fun setEmail(email: String) {
-        _uiState.update { it.copy(email = email) }
+    /**
+     * Resets the [login operation status][LoginUiState.isLoginOperationComplete] by setting it to
+     * `false`.
+     */
+    private fun resetLoginStatus() {
+        _uiState.update { it.copy(isLoginOperationComplete = false) }
     }
 
-    fun setPassword(password: String) {
-        _uiState.update { it.copy(password = password) }
-    }
-
-    fun toggleStatusBannerVisibility(isVisible: Boolean) {
-        _uiState.update { it.copy(isStatusBannerVisible = isVisible) }
+    /**
+     * Hides the status banner.
+     */
+    private fun hideStatusBanner() {
+        _uiState.update { it.copy(isStatusBannerVisible = false) }
     }
 }

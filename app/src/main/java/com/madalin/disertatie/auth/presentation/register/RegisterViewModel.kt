@@ -1,22 +1,20 @@
 package com.madalin.disertatie.auth.presentation.register
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.madalin.disertatie.R
 import com.madalin.disertatie.auth.domain.repository.FirebaseAuthRepository
-import com.madalin.disertatie.auth.domain.validation.ConfirmPasswordFieldError
-import com.madalin.disertatie.auth.domain.validation.EmailFieldError
-import com.madalin.disertatie.auth.domain.validation.PasswordFieldError
-import com.madalin.disertatie.auth.domain.validation.validateRegisterFields
-import com.madalin.disertatie.auth.domain.failures.RegisterFailure
+import com.madalin.disertatie.auth.domain.result.AccountDataStorageResult
+import com.madalin.disertatie.auth.domain.result.RegisterResult
+import com.madalin.disertatie.auth.domain.validation.AuthValidator
+import com.madalin.disertatie.auth.presentation.actions.RegisterAction
 import com.madalin.disertatie.core.domain.model.User
-import com.madalin.disertatie.core.domain.util.LengthConstraint
 import com.madalin.disertatie.core.presentation.components.StatusBannerData
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.components.StatusDialogData
 import com.madalin.disertatie.core.presentation.components.StatusDialogType
 import com.madalin.disertatie.core.presentation.util.UiText
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,11 +28,23 @@ class RegisterViewModel(
     val uiState = _uiState.asStateFlow()
 
     /**
+     * Handles the given [RegisterAction] by calling the appropriate handle method.
+     */
+    fun handleAction(action: RegisterAction) {
+        when (action) {
+            is RegisterAction.DoRegistration -> register(action.email, action.password, action.confirmPassword)
+            RegisterAction.ResetRegistrationStatus -> resetRegistrationStatus()
+            RegisterAction.HideStatusBanner -> hideStatusBanner()
+            RegisterAction.HideStatusDialog -> hideStatusDialog()
+        }
+    }
+
+    /**
      * Registers the user with the given [email] and [password] if they are valid.
      * If the user creation has been successfully performed, calls [storeUserToFirestore] to store
      * its data.
      */
-    fun register(email: String, password: String, confirmPassword: String) {
+    private fun register(email: String, password: String, confirmPassword: String) {
         val _email = email.trim()
         val _password = password.trim()
         val _confirmPassword = confirmPassword.trim()
@@ -42,38 +52,31 @@ class RegisterViewModel(
         // if the given data is not valid then the registration fails
         if (!validateFields(_email, _password, _confirmPassword)) return
 
-        // otherwise show the dialog
-        _uiState.update {
-            it.copy(
-                isStatusDialogVisible = true,
-                statusDialogData = StatusDialogData(
-                    StatusDialogType.Processing,
-                    UiText.Resource(R.string.processing)
+        // otherwise proceeds to registration
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isStatusDialogVisible = true,
+                    statusDialogData = StatusDialogData(StatusDialogType.Processing, UiText.Resource(R.string.processing))
                 )
-            )
-        }
+            }
 
-        // proceed to registration
-        repository.createUserWithEmailAndPassword(_email, _password,
-            onSuccess = { firebaseUser ->
-                firebaseUser?.let { // if the current user is not null
+            val result = async { repository.createUserWithEmailAndPassword(_email, _password) }.await()
+            when (result) {
+                // TODO what if the user is null?
+                is RegisterResult.Success -> result.firebaseUser?.let { // if the current user is not null
                     storeUserToFirestore(User(id = it.uid, email = _email))
                 }
-            },
-            onFailure = { failureType ->
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isRegisterOperationComplete = false,
-                        isStatusDialogVisible = false, // dismiss the dialog
-                        isStatusBannerVisible = true, // show the banner
-                        statusBannerData = StatusBannerData(
-                            StatusBannerType.Error,
-                            determineRegisterFailureMessage(failureType)
-                        )
-                    )
-                }
+
+                RegisterResult.InvalidEmail -> updateStateUponFailure(UiText.Resource(R.string.email_is_invalid))
+                RegisterResult.InvalidCredentials -> updateStateUponFailure(UiText.Resource(R.string.invalid_credentials))
+                RegisterResult.EmailIsTaken -> updateStateUponFailure(UiText.Resource(R.string.email_is_taken))
+                is RegisterResult.Error -> updateStateUponFailure(
+                    if (result.message != null) UiText.Dynamic(result.message)
+                    else UiText.Resource(R.string.error_creating_account)
+                )
             }
-        )
+        }
     }
 
     /**
@@ -82,28 +85,28 @@ class RegisterViewModel(
      * @return `true` if valid, `false` otherwise
      */
     private fun validateFields(email: String, password: String, confirmPassword: String): Boolean {
-        val errors = validateRegisterFields(email, password, confirmPassword)
+        val errors = AuthValidator.validateRegistrationFields(email, password, confirmPassword)
 
         _uiState.update { currentState ->
             currentState.copy(
-                emailError = when (errors.find { it is EmailFieldError } as? EmailFieldError) {
-                    EmailFieldError.NoEmailProvided -> UiText.Resource(R.string.email_cant_be_empty)
-                    EmailFieldError.InvalidEmail -> UiText.Resource(R.string.email_is_invalid)
+                emailError = when (errors.find { it is AuthValidator.EmailResult } as? AuthValidator.EmailResult) {
+                    AuthValidator.EmailResult.NoEmailProvided -> UiText.Resource(R.string.email_cant_be_empty)
+                    AuthValidator.EmailResult.InvalidEmail -> UiText.Resource(R.string.email_is_invalid)
                     null -> UiText.Empty
                 },
-                passwordError = when (errors.find { it is PasswordFieldError } as? PasswordFieldError) {
-                    PasswordFieldError.NoPasswordProvided -> UiText.Resource(R.string.password_cant_be_empty)
-                    PasswordFieldError.InvalidPasswordLength -> UiText.Resource(
+                passwordError = when (errors.find { it is AuthValidator.PasswordResult } as? AuthValidator.PasswordResult) {
+                    AuthValidator.PasswordResult.NoPasswordProvided -> UiText.Resource(R.string.password_cant_be_empty)
+                    AuthValidator.PasswordResult.InvalidPasswordLength -> UiText.Resource(
                         R.string.password_must_be_between_x_and_y_characters,
-                        LengthConstraint.MIN_PASSWORD_LENGTH,
-                        LengthConstraint.MAX_PASSWORD_LENGTH
+                        AuthValidator.MIN_PASSWORD_LENGTH,
+                        AuthValidator.MAX_PASSWORD_LENGTH
                     )
 
                     null -> UiText.Empty
                 },
-                confirmPasswordError = when (errors.find { it is ConfirmPasswordFieldError } as? ConfirmPasswordFieldError) {
-                    ConfirmPasswordFieldError.NoPasswordProvided -> UiText.Resource(R.string.password_cant_be_empty)
-                    ConfirmPasswordFieldError.PasswordsNotMatching -> UiText.Resource(R.string.passwords_dont_match)
+                confirmPasswordError = when (errors.find { it is AuthValidator.ConfirmPasswordResult } as? AuthValidator.ConfirmPasswordResult) {
+                    AuthValidator.ConfirmPasswordResult.NoPasswordProvided -> UiText.Resource(R.string.password_cant_be_empty)
+                    AuthValidator.ConfirmPasswordResult.PasswordsNotMatching -> UiText.Resource(R.string.passwords_dont_match)
                     null -> UiText.Empty
                 }
             )
@@ -116,18 +119,18 @@ class RegisterViewModel(
      * Stores the given [user] data to Firestore and updates [_uiState].
      */
     private fun storeUserToFirestore(user: User) {
-        repository.storeAccountDataToFirestore(user,
-            onSuccess = {
-                _uiState.update {
-                    it.copy(
-                        statusDialogData = StatusDialogData( // update the dialog
-                            StatusDialogType.Success,
-                            UiText.Resource(R.string.you_have_successfully_registered)
+        viewModelScope.launch {
+            val result = async { repository.storeAccountDataToFirestore(user) }.await()
+            when (result) {
+                AccountDataStorageResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            statusDialogData = StatusDialogData( // updates the dialog
+                                StatusDialogType.Success,
+                                UiText.Resource(R.string.you_have_successfully_registered)
+                            )
                         )
-                    )
-                }
-
-                viewModelScope.launch {
+                    }
                     delay(3000)
                     _uiState.update {
                         it.copy(
@@ -136,65 +139,60 @@ class RegisterViewModel(
                         )
                     }
                 }
-            },
-            onFailure = { errorMessage ->
-                errorMessage?.let { Log.e("SignUpViewModel", it) }
-                _uiState.update {
-                    it.copy(
-                        isStatusDialogVisible = false, // dismiss the dialog
-                        isStatusBannerVisible = true, // show the banner
-                        statusBannerData = StatusBannerData(
-                            StatusBannerType.Error, if (errorMessage != null) {
-                                UiText.Dynamic(errorMessage)
-                            } else {
-                                UiText.Resource(R.string.data_recording_error)
-                            }
+
+                is AccountDataStorageResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isStatusDialogVisible = false, // dismiss the dialog
+                            isStatusBannerVisible = true, // shows the banner
+                            statusBannerData = StatusBannerData(
+                                StatusBannerType.Error,
+                                if (result.message != null) {
+                                    UiText.Dynamic(result.message)
+                                } else {
+                                    UiText.Resource(R.string.data_recording_error)
+                                }
+                            )
                         )
-                    )
+                    }
                 }
-            })
-    }
-
-    /**
-     * Determines the [failureType] and returns the specific [UiText] message.
-     */
-    private fun determineRegisterFailureMessage(failureType: RegisterFailure) = when (failureType) {
-        RegisterFailure.InvalidEmail -> UiText.Resource(R.string.email_is_invalid)
-        RegisterFailure.InvalidCredentials -> UiText.Resource(R.string.invalid_credentials)
-        RegisterFailure.EmailIsTaken -> UiText.Resource(R.string.email_is_taken)
-        is RegisterFailure.Error -> {
-            if (failureType.message != null) UiText.Dynamic(failureType.message)
-            else UiText.Resource(R.string.error_creating_account)
+            }
         }
     }
 
     /**
-     * Sets the [register operation status][RegisterUiState.isRegisterOperationComplete] to [status].
-     * @param status `true` if user has signed up, `false` otherwise
+     * Updates the state upon a registration failure with the given [UiText] message.
      */
-    fun setRegisterOperationStatus(status: Boolean) {
-        _uiState.update {
-            it.copy(isRegisterOperationComplete = status)
+    private fun updateStateUponFailure(text: UiText) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isRegisterOperationComplete = false,
+                isStatusDialogVisible = false, // dismiss the dialog
+                isStatusBannerVisible = true, // show the banner
+                statusBannerData = StatusBannerData(StatusBannerType.Error, text)
+            )
         }
     }
 
-    fun setEmail(email: String) {
-        _uiState.update { it.copy(email = email) }
+    /**
+     * Resets the [register operation status][RegisterUiState.isRegisterOperationComplete] by
+     * setting it to `false`.
+     */
+    private fun resetRegistrationStatus() {
+        _uiState.update { it.copy(isRegisterOperationComplete = false) }
     }
 
-    fun setPassword(password: String) {
-        _uiState.update { it.copy(password = password) }
+    /**
+     * Hides the status banner.
+     */
+    private fun hideStatusBanner() {
+        _uiState.update { it.copy(isStatusBannerVisible = false) }
     }
 
-    fun setConfirmPassword(confirmPassword: String) {
-        _uiState.update { it.copy(confirmPassword = confirmPassword) }
-    }
-
-    fun toggleStatusDialogVisibility(isVisible: Boolean) {
-        _uiState.update { it.copy(isStatusDialogVisible = isVisible) }
-    }
-
-    fun toggleStatusBannerVisibility(isVisible: Boolean) {
-        _uiState.update { it.copy(isStatusBannerVisible = isVisible) }
+    /**
+     * Hides the status dialog.
+     */
+    private fun hideStatusDialog() {
+        _uiState.update { it.copy(isStatusDialogVisible = false) }
     }
 }
