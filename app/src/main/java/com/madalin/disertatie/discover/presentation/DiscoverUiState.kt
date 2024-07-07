@@ -1,4 +1,4 @@
-package com.madalin.disertatie.discover
+package com.madalin.disertatie.discover.presentation
 
 import android.location.Location
 import com.madalin.disertatie.core.domain.model.Trail

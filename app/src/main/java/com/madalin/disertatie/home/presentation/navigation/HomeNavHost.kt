@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import com.madalin.disertatie.core.presentation.navigation.DiscoverDest
 import com.madalin.disertatie.core.presentation.navigation.MapDest
 import com.madalin.disertatie.core.presentation.navigation.ProfileDest
-import com.madalin.disertatie.discover.DiscoverScreen
+import com.madalin.disertatie.discover.presentation.DiscoverScreen
 import com.madalin.disertatie.map.presentation.MapScreen
 import com.madalin.disertatie.profile.presentation.ProfileScreen
 

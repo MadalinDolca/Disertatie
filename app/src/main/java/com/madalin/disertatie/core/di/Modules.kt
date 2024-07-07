@@ -17,7 +17,7 @@ import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
-import com.madalin.disertatie.discover.DiscoverViewModel
+import com.madalin.disertatie.discover.presentation.DiscoverViewModel
 import com.madalin.disertatie.home.presentation.HomeViewModel
 import com.madalin.disertatie.map.data.repository.WeatherRepositoryImpl
 import com.madalin.disertatie.map.domain.repository.WeatherRepository

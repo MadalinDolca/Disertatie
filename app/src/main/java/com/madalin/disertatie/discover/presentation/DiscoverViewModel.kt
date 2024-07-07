@@ -1,4 +1,4 @@
-package com.madalin.disertatie.discover
+package com.madalin.disertatie.discover.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +11,7 @@ import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.util.UiText
-import com.madalin.disertatie.discover.action.DiscoverAction
+import com.madalin.disertatie.discover.presentation.action.DiscoverAction
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

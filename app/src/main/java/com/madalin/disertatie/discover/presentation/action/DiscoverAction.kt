@@ -1,4 +1,4 @@
-package com.madalin.disertatie.discover.action
+package com.madalin.disertatie.discover.presentation.action
 
 import com.madalin.disertatie.core.domain.action.Action
 

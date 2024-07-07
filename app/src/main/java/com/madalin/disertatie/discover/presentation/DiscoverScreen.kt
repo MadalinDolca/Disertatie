@@ -1,4 +1,4 @@
-package com.madalin.disertatie.discover
+package com.madalin.disertatie.discover.presentation
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -50,7 +50,7 @@ import com.madalin.disertatie.core.presentation.components.StatusPlaceholderType
 import com.madalin.disertatie.core.presentation.components.TrailBannerItem
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.presentation.util.UiText
-import com.madalin.disertatie.discover.action.DiscoverAction
+import com.madalin.disertatie.discover.presentation.action.DiscoverAction
 import org.koin.androidx.compose.koinViewModel
 
 private const val QUERY_MIN_LENGTH = 3
