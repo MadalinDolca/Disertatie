@@ -1,6 +1,6 @@
-package com.madalin.disertatie.map.domain.repository
+package com.madalin.disertatie.core.domain.repository
 
-import com.madalin.disertatie.map.domain.result.WeatherResult
+import com.madalin.disertatie.core.domain.result.WeatherResult
 import kotlinx.coroutines.flow.Flow
 
 interface WeatherRepository {

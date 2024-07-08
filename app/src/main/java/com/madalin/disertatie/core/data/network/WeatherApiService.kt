@@ -1,6 +1,6 @@
-package com.madalin.disertatie.map.data.network
+package com.madalin.disertatie.core.data.network
 
-import com.madalin.disertatie.map.data.model.WeatherResponse
+import com.madalin.disertatie.core.data.model.WeatherResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

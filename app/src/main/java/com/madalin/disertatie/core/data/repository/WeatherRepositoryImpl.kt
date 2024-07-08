@@ -1,10 +1,10 @@
-package com.madalin.disertatie.map.data.repository
+package com.madalin.disertatie.core.data.repository
 
 import com.madalin.disertatie.BuildConfig
-import com.madalin.disertatie.map.data.network.WeatherApiService
-import com.madalin.disertatie.map.data.toWeather
-import com.madalin.disertatie.map.domain.repository.WeatherRepository
-import com.madalin.disertatie.map.domain.result.WeatherResult
+import com.madalin.disertatie.core.data.network.WeatherApiService
+import com.madalin.disertatie.core.data.util.toWeather
+import com.madalin.disertatie.core.domain.repository.WeatherRepository
+import com.madalin.disertatie.core.domain.result.WeatherResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

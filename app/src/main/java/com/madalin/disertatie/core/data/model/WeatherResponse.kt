@@ -1,4 +1,4 @@
-package com.madalin.disertatie.map.data.model
+package com.madalin.disertatie.core.data.model
 
 import kotlinx.serialization.Serializable
 

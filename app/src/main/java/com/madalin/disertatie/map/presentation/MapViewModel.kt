@@ -38,10 +38,10 @@ import com.madalin.disertatie.map.domain.LocationClassifier
 import com.madalin.disertatie.map.domain.LocationClient
 import com.madalin.disertatie.map.domain.extension.hasSameCoordinates
 import com.madalin.disertatie.map.domain.extension.toLatLng
-import com.madalin.disertatie.map.domain.repository.WeatherRepository
+import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.domain.result.LocationClassificationResult
 import com.madalin.disertatie.map.domain.result.LocationFetchingResult
-import com.madalin.disertatie.map.domain.result.WeatherResult
+import com.madalin.disertatie.core.domain.result.WeatherResult
 import com.madalin.disertatie.map.domain.util.buildPrompt
 import com.madalin.disertatie.map.domain.util.requestLocationSettings
 import com.madalin.disertatie.map.presentation.action.LocationAction

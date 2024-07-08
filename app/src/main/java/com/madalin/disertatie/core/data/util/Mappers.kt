@@ -1,6 +1,6 @@
-package com.madalin.disertatie.map.data
+package com.madalin.disertatie.core.data.util
 
-import com.madalin.disertatie.map.data.model.WeatherResponse
+import com.madalin.disertatie.core.data.model.WeatherResponse
 import com.madalin.disertatie.core.domain.model.Weather
 
 /**

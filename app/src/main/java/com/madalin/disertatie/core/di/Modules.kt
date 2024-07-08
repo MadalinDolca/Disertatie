@@ -19,8 +19,8 @@ import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
 import com.madalin.disertatie.discover.presentation.DiscoverViewModel
 import com.madalin.disertatie.home.presentation.HomeViewModel
-import com.madalin.disertatie.map.data.repository.WeatherRepositoryImpl
-import com.madalin.disertatie.map.domain.repository.WeatherRepository
+import com.madalin.disertatie.core.data.repository.WeatherRepositoryImpl
+import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.presentation.MapViewModel
 import com.madalin.disertatie.profile.presentation.ProfileViewModel
 import com.madalin.disertatie.trail_info.presentation.TrailInfoViewModel
