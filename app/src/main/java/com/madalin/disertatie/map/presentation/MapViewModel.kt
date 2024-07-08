@@ -54,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -76,15 +77,17 @@ class MapViewModel(
 
     private lateinit var locationFetchingScope: CoroutineScope
     private lateinit var locationClient: LocationClient
-    private var lastLaunchedTrailId: String? = ""
 
     init {
         viewModelScope.launch {
             globalDriver.state.collect {
                 it.reduce().run {
-                    if (lastLaunchedTrailId != it.launchedTrailId) {
-                        lastLaunchedTrailId = it.launchedTrailId
+                    if (_uiState.value.launchedTrailId != null) {
                         showLaunchedTrail()
+
+                        // clears the global ID and automatically the local one after collecting it
+                        delay(3000)
+                        globalDriver.onAction(GlobalAction.DeleteLaunchedTrailId)
                     }
                 }
             }
@@ -838,10 +841,10 @@ class MapViewModel(
      * trail exists.
      */
     private fun showLaunchedTrail() {
-        /*if (_uiState.value.isCreatingTrail) {
-            showStatusBanner(StatusBannerType.Info, R.string.stop_trail_creation_before_launching_a_trail)
+        if (_uiState.value.isCreatingTrail) {
+            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Info, R.string.stop_trail_creation_before_launching_a_trail))
             return
-        }*/
+        }
 
         val launchedTrailId = _uiState.value.launchedTrailId
         if (launchedTrailId == null) {

@@ -6,7 +6,6 @@ import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -315,7 +314,7 @@ private fun MapControls(
             onLaunchedTrailStartingPointClick = { onAction(MapAction.MoveCameraToLaunchedTrailStartingPoint) },
             onLaunchedTrailEndingPointClick = { onAction(MapAction.MoveCameraToLaunchedTrailEndingPoint) },
             onUserLocationButtonClick = { onAction(MapAction.MoveCameraToUserLocation) },
-            modifier = Modifier.align(Alignment.BottomStart)
+            modifier = Modifier.fillMaxSize()
         )
 
         RightSideControls(
@@ -326,7 +325,7 @@ private fun MapControls(
             onCloseLaunchedTrailClick = { onAction(TrailAction.CloseLaunchedTrail) },
             onShowNearbyTrailsClick = { onAction(TrailAction.ShowNearbyTrails) },
             onHideNearbyTrailsClick = { onAction(TrailAction.HideNearbyTrails) },
-            modifier = Modifier.align(Alignment.CenterEnd)
+            modifier = Modifier.fillMaxSize()
         )
 
         NearbyTrailsInfoBanner(
@@ -352,8 +351,8 @@ private fun LeftSideControls(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.animateContentSize(),
-        verticalArrangement = Arrangement.spacedBy(Dimens.separator)
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(Dimens.separator, Alignment.Bottom),
     ) {
         // launched trail starting point
         LaunchedTrailExtremePointButton(
@@ -394,7 +393,8 @@ private fun RightSideControls(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Dimens.separator)
+        verticalArrangement = Arrangement.spacedBy(Dimens.separator, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.End
     ) {
         CloseLaunchedTrailButton(
             isVisible = isLaunchedTrail,
