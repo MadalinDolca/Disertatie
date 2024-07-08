@@ -19,7 +19,7 @@ import com.madalin.disertatie.core.presentation.util.Dimens
 fun LoadingDialog(
     isVisible: Boolean,
     message: String,
-    onDismiss: () -> Unit,
+    button: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (isVisible) {
@@ -39,6 +39,8 @@ fun LoadingDialog(
                     CircularProgressIndicator()
                     Spacer(modifier = Modifier.height(Dimens.separator))
                     Text(text = message)
+
+                    button()
                 }
             }
         }

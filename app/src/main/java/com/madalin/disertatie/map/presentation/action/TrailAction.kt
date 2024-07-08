@@ -34,7 +34,7 @@ sealed class TrailAction : Action {
     data object ClearStpData : TrailAction()
 
     // launched trail
-    data object HideLoadingLaunchedTrailDialog : TrailAction()
+    data object CancelLaunchedTrailLoading : TrailAction()
     data object CloseLaunchedTrail : TrailAction()
 
     // nearby trails

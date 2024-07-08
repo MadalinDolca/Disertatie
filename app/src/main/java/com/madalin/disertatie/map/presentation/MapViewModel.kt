@@ -51,6 +51,7 @@ import com.madalin.disertatie.map.presentation.action.TrailAction
 import com.madalin.disertatie.map.presentation.components.SuggestionDialogState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
@@ -77,6 +78,7 @@ class MapViewModel(
 
     private lateinit var locationFetchingScope: CoroutineScope
     private lateinit var locationClient: LocationClient
+    private lateinit var launchedTrailJob: Job
 
     init {
         viewModelScope.launch {
@@ -196,7 +198,7 @@ class MapViewModel(
                 )
             }
 
-            TrailAction.HideLoadingLaunchedTrailDialog -> hideLoadingLaunchedTrailDialog()
+            TrailAction.CancelLaunchedTrailLoading -> cancelLaunchedTrailLoading()
             TrailAction.CloseLaunchedTrail -> closeLaunchedTrail()
 
             TrailAction.ShowNearbyTrails -> showNearbyTrails()
@@ -852,7 +854,7 @@ class MapViewModel(
             return
         }
 
-        viewModelScope.launch {
+        launchedTrailJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoadingLaunchedTrail = true) } // loading
 
             val result = async { firebaseContentRepository.getFullTrailById(launchedTrailId) }.await()
@@ -894,9 +896,11 @@ class MapViewModel(
     }
 
     /**
-     * Hides the loading launched trail dialog.
+     * Cancels the launched trail loading process and hides the dialog.
      */
-    private fun hideLoadingLaunchedTrailDialog() {
+    private fun cancelLaunchedTrailLoading() {
+        launchedTrailJob.cancel()
+        closeLaunchedTrail()
         _uiState.update { it.copy(isLoadingLaunchedTrail = false) }
     }
 
