@@ -18,6 +18,7 @@ sealed class TrailAction : Action {
     data class SetTrailVisibility(val isPublic: Boolean) : TrailAction()
     data object SaveTrail : TrailAction()
     data object DontSaveTrail : TrailAction()
+    data object CancelSavingTrail : TrailAction()
 
     // trail point
     data class ShowTrailPointInfoModal(val trailPoint: TrailPoint? = null) : TrailAction()

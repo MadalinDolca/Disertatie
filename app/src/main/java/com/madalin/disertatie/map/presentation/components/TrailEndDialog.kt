@@ -58,7 +58,12 @@ fun TrailEndDialog(
                         onAction = onAction
                     )
                 } else {
-                    UploadingIndicator()
+                    UploadingIndicator(
+                        onCancelClick = { onAction(TrailAction.CancelSavingTrail) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Dimens.container)
+                    )
                 }
             }
         }
@@ -84,7 +89,7 @@ private fun TrailForm(
             text = stringResource(R.string.add_info_about_this_trail),
             style = MaterialTheme.typography.titleLarge
         )
-
+        // trail name
         OutlinedTextField(
             value = trailName,
             onValueChange = { onAction(TrailAction.UpdateTrailName(it)) },
@@ -103,7 +108,7 @@ private fun TrailForm(
             maxLines = 3,
             shape = MaterialTheme.shapes.medium
         )
-
+        // trail description
         OutlinedTextField(
             value = trailDescription,
             onValueChange = { onAction(TrailAction.UpdateTrailDescription(it)) },
@@ -112,7 +117,7 @@ private fun TrailForm(
             maxLines = 5,
             shape = MaterialTheme.shapes.medium
         )
-
+        // visibility switch
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -123,7 +128,7 @@ private fun TrailForm(
                 onCheckedChange = { onAction(TrailAction.SetTrailVisibility(it)) }
             )
         }
-
+        // buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -139,16 +144,23 @@ private fun TrailForm(
 }
 
 @Composable
-private fun UploadingIndicator(modifier: Modifier = Modifier) {
+private fun UploadingIndicator(
+    modifier: Modifier = Modifier,
+    onCancelClick: () -> Unit
+) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(Dimens.container),
+        modifier = modifier,
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CircularProgressIndicator()
         Spacer(modifier = Modifier.height(Dimens.separator))
+
         Text(text = stringResource(R.string.uploading_trail))
+        Spacer(modifier = Modifier.height(Dimens.separator))
+
+        TextButton(onClick = { onCancelClick() }) {
+            Text(text = stringResource(R.string.cancel))
+        }
     }
 }

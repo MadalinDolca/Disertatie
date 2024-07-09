@@ -181,4 +181,5 @@
     <string name="could_not_get_the_weather_forecast_because_the_coordinates_are_null">Could not get the weather forecast because the coordinates are null</string>
     <string name="weather_forecast">Weather forecast</string>
     <string name="loading_weather_forecast">Loading weather forecast</string>
+    <string name="trail_saving_has_been_cancelled">Trail saving has been cancelled</string>
 </resources>

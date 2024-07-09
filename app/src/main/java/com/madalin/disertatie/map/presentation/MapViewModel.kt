@@ -172,6 +172,7 @@ class MapViewModel(
             is TrailAction.SetTrailVisibility -> updateTrail { it.copy(public = action.isPublic) }
             TrailAction.SaveTrail -> saveTrail()
             TrailAction.DontSaveTrail -> dontSaveTrail()
+            TrailAction.CancelSavingTrail -> cancelSavingTrail()
 
             is TrailAction.ShowTrailPointInfoModal -> showTrailPointInfoModal(action.trailPoint)
             TrailAction.HideTrailPointInfoModal -> hideTrailPointInfoModal()
@@ -480,6 +481,21 @@ class MapViewModel(
                 currentTrail = null
             )
         }
+    }
+
+    /**
+     * Cancels the trail saving process, hides the dialog and clears the collected trail data.
+     */
+    private fun cancelSavingTrail() {
+        saveTrailJob.cancel()
+        _uiState.update {
+            it.copy(
+                isTrailEndDialogVisible = false,
+                isTrailUploading = false,
+                currentTrail = null
+            )
+        }
+        globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Info, R.string.trail_saving_has_been_cancelled))
     }
 
     /**
