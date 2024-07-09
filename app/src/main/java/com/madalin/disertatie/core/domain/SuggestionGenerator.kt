@@ -1,6 +1,7 @@
 package com.madalin.disertatie.core.domain
 
 import android.graphics.Bitmap
+import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.madalin.disertatie.BuildConfig
@@ -22,10 +23,11 @@ class SuggestionGenerator(
         emit(SuggestionResult.Loading)
 
         val prompt = if (images.isNotEmpty()) {
-            "List some activities that can be done in the place shown in the images. The activities must meet the following conditions: $info"
+            "List some outdoor activities that can be done in the place shown in the images. The activities must meet the following conditions: $info"
         } else {
-            "List some activities that can be done in the place with the following details: $info"
+            "List some outdoor activities that can be done in the place with the following details: $info"
         }
+        Log.d("SuggestionGenerator", prompt)
         val inputContent = content {
             images.forEach { image(it) }
             text(prompt)

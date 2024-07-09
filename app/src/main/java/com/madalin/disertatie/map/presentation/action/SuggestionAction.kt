@@ -12,6 +12,7 @@ sealed class SuggestionAction : Action {
 
     // suggestion dialog state
     data class SetImageState(val isChecked: Boolean) : SuggestionAction()
+    data class SetOnlyClassificationsState(val isChecked: Boolean) : SuggestionAction()
     data class SetNoteState(val isChecked: Boolean) : SuggestionAction()
     data class SetWeatherState(val isChecked: Boolean) : SuggestionAction()
     data class SetWarningState(val isChecked: Boolean) : SuggestionAction()

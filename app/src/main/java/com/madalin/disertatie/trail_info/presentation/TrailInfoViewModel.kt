@@ -221,6 +221,9 @@ class TrailInfoViewModel(
         }
     }
 
+    /**
+     * Obtains the weather forecast of the current trail and indexes the unique days.
+     */
     private fun getWeatherForecast(latitude: Double?, longitude: Double?) {
         if (latitude == null || longitude == null) {
             _uiState.update { it.copy(weatherForecastError = UiText.Resource(R.string.could_not_get_the_weather_forecast_because_the_coordinates_are_null)) }

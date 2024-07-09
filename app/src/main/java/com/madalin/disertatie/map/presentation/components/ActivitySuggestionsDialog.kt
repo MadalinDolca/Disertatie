@@ -1,5 +1,6 @@
 package com.madalin.disertatie.map.presentation.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,7 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 
 data class SuggestionDialogState(
     val isImagesChecked: Boolean = false,
+    val isOnlyClassificationsChecked: Boolean = false,
     val isNoteChecked: Boolean = false,
     val isWeatherChecked: Boolean = false,
     val isWarningChecked: Boolean = false,
@@ -95,7 +97,6 @@ private fun SuggestionSettings(
             text = stringResource(R.string.ask_ai_for_activity_suggestions),
             style = MaterialTheme.typography.titleLarge
         )
-
         Spacer(modifier = Modifier.height(Dimens.separator))
 
         Switches(
@@ -103,7 +104,6 @@ private fun SuggestionSettings(
             trailPoint = trailPoint,
             onAction = onAction
         )
-
         Spacer(modifier = Modifier.height(Dimens.separator))
 
         OutlinedTextField(
@@ -114,7 +114,6 @@ private fun SuggestionSettings(
             maxLines = 5,
             shape = MaterialTheme.shapes.medium
         )
-
         Spacer(modifier = Modifier.height(Dimens.separator))
 
         Row(
@@ -141,13 +140,25 @@ private fun Switches(
     onAction: (Action) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+    ) {
         if (trailPoint.imagesList.isNotEmpty()) {
             SwitchRow(
                 text = stringResource(R.string.include_images),
                 isChecked = suggestionDialogState.isImagesChecked,
                 onCheckedChange = { onAction(SuggestionAction.SetImageState(it)) }
             )
+
+            if (suggestionDialogState.isImagesChecked) {
+                SwitchRow(
+                    text = stringResource(R.string.include_only_top_classifications),
+                    isChecked = suggestionDialogState.isOnlyClassificationsChecked,
+                    onCheckedChange = { onAction(SuggestionAction.SetOnlyClassificationsState(it)) }
+                )
+            }
         }
 
         if (trailPoint.note.isNotEmpty()) {
@@ -191,7 +202,8 @@ private fun SwitchRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = text)
         Switch(checked = isChecked, onCheckedChange = { onCheckedChange(it) })
@@ -225,16 +237,15 @@ private fun SuggestionResult(
             text = stringResource(R.string.ai_suggested_the_following),
             style = MaterialTheme.typography.titleLarge
         )
-
         ElevatedCard {
             MarkdownText(
                 markdown = suggestion,
                 modifier = Modifier
                     .padding(Dimens.container),
-                maxLines = 15
+                maxLines = 15,
+                isTextSelectable = true
             )
         }
-
         Row(
             modifier = modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -253,6 +264,10 @@ private fun SuggestionResult(
     }
 }
 
+/**
+ * Returns `true` if at least one suggestion dialog switch is enabled or if additional info is
+ * present, otherwise returns `false`.
+ */
 private fun isGetSuggestionsButtonEnabled(state: SuggestionDialogState): Boolean {
     return !(!state.isImagesChecked
             && !state.isNoteChecked

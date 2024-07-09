@@ -49,4 +49,11 @@ data class TrailPoint(
      * Extracts the images of this trail point and returns it as a list of [Bitmap]s.
      */
     fun extractImages() = this.imagesList.map { it.image }
+
+    /**
+     * Extracts the images classifications of this trail point and returns them as a single string.
+     */
+    fun extractImagesClassificationsString() = this.imagesList
+        .map { it.classifications?.topResult?.type?.name }
+        .joinToString(separator = ", ")
 }

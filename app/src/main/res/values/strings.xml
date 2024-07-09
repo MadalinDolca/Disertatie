@@ -182,4 +182,5 @@
     <string name="weather_forecast">Weather forecast</string>
     <string name="loading_weather_forecast">Loading weather forecast</string>
     <string name="trail_saving_has_been_cancelled">Trail saving has been cancelled</string>
+    <string name="include_only_top_classifications">Include only top classifications</string>
 </resources>

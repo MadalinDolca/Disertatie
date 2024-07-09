@@ -9,6 +9,14 @@ import com.madalin.disertatie.map.presentation.components.SuggestionDialogState
  * made in the suggestion dialog and the information of the selected trail point.
  */
 fun buildPrompt(selectedTrailPoint: TrailPoint?, dialogState: SuggestionDialogState): String {
+    val locationTypeText = if (dialogState.isOnlyClassificationsChecked) {
+        if (selectedTrailPoint?.imagesList?.size == 1) {
+            "\n- the place is a ${selectedTrailPoint.imagesList[0].classifications?.topResult?.type?.name}"
+        } else {
+            "\n- the place is a ${selectedTrailPoint?.extractImagesClassificationsString()}"
+        }
+    } else ""
+
     val temperatureText = if (dialogState.isWeatherChecked) {
         "\n- the weather is ${selectedTrailPoint?.weather?.weatherDescription}, " +
                 "with a temperature of ${selectedTrailPoint?.weather?.mainTemperature} Degree Celsius, " +
@@ -31,5 +39,5 @@ fun buildPrompt(selectedTrailPoint: TrailPoint?, dialogState: SuggestionDialogSt
         "\n- ${dialogState.additionalInfo}"
     } else ""
 
-    return temperatureText + trailPointNoteText + timeText + warningText + additionalInfoText
+    return locationTypeText + temperatureText + trailPointNoteText + timeText + warningText + additionalInfoText
 }

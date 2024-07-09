@@ -216,6 +216,7 @@ class MapViewModel(
         when (action) {
             SuggestionAction.GetActivitySuggestions -> getActivitySuggestionsForLocation()
             is SuggestionAction.SetImageState -> updateSuggestionDialog { it.copy(isImagesChecked = action.isChecked) }
+            is SuggestionAction.SetOnlyClassificationsState -> updateSuggestionDialog { it.copy(isOnlyClassificationsChecked = action.isChecked) }
             is SuggestionAction.SetNoteState -> updateSuggestionDialog { it.copy(isNoteChecked = action.isChecked) }
             is SuggestionAction.SetWarningState -> updateSuggestionDialog { it.copy(isWarningChecked = action.isChecked) }
             is SuggestionAction.SetWeatherState -> updateSuggestionDialog { it.copy(isWeatherChecked = action.isChecked) }
@@ -832,7 +833,9 @@ class MapViewModel(
             return
         }
 
-        val trailPointImages = if (suggestionDialogState.isImagesChecked) {
+        // if only the "Include images" switch is checked and not the "Include only classifications",
+        // it will extract the Bitmap images from the selected trail point
+        val trailPointImages = if (suggestionDialogState.isImagesChecked && !suggestionDialogState.isOnlyClassificationsChecked) {
             selectedTrailPoint.extractImages()
         } else {
             emptyList()
