@@ -268,6 +268,9 @@ class MapViewModel(
             }.launchIn(locationFetchingScope)
     }
 
+    /**
+     * Ends the trail creation and stops fetching the user's location.
+     */
     private fun stopLocationFetching() {
         stopTrailCreation()
         if (::locationClient.isInitialized) {
@@ -755,6 +758,10 @@ class MapViewModel(
             }
     }
 
+    /**
+     * Adds the given [image] to the selected trail point and classifies it. After the classification
+     * completes, it updates the selected trail point image with the result.
+     */
     private fun addAndClassifySTPImage(applicationContext: Context, image: Bitmap) {
         val classifier = LocationClassifier(applicationContext, image)
         val newImage = TrailImage(image = image)
@@ -772,8 +779,7 @@ class MapViewModel(
                     is LocationClassificationResult.Success -> updateSTPImageClassifications(newImage, result.data)
                     is LocationClassificationResult.Error -> globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, result.message))
                 }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
     }
 
     /**
@@ -813,6 +819,10 @@ class MapViewModel(
         }
     }
 
+    /**
+     * Obtains activity suggestions for the selected trail point location by taking into
+     * consideration its data according to the suggestion dialog state.
+     */
     private fun getActivitySuggestionsForLocation() {
         val selectedTrailPoint = _uiState.value.selectedTrailPoint
         val suggestionDialogState = _uiState.value.suggestionDialogState
@@ -831,23 +841,21 @@ class MapViewModel(
         suggestionGenerator.getActivitySuggestionsForLocation(
             buildPrompt(_uiState.value.selectedTrailPoint, _uiState.value.suggestionDialogState),
             trailPointImages
-        )
-            .map { result ->
-                when (result) {
-                    SuggestionResult.Loading -> setIsSuggestionLoading(true)
+        ).map { result ->
+            when (result) {
+                SuggestionResult.Loading -> setIsSuggestionLoading(true)
 
-                    is SuggestionResult.Success -> {
-                        updateSuggestionDialog { it.copy(response = result.response) }
-                        setIsSuggestionLoading(false)
-                    }
+                is SuggestionResult.Success -> {
+                    updateSuggestionDialog { it.copy(response = result.response) }
+                    setIsSuggestionLoading(false)
+                }
 
-                    is SuggestionResult.Error -> {
-                        globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_make_suggestions))
-                        setIsSuggestionLoading(false)
-                    }
+                is SuggestionResult.Error -> {
+                    globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_make_suggestions))
+                    setIsSuggestionLoading(false)
                 }
             }
-            .launchIn(viewModelScope)
+        }.launchIn(viewModelScope)
     }
 
     /**
@@ -903,6 +911,10 @@ class MapViewModel(
         }
     }
 
+    /**
+     * Closes the launched trail by removing it from the map and ui state, then it moves the camera
+     * to the user's location and globally deletes the ID.
+     */
     private fun closeLaunchedTrail() {
         _uiState.update {
             it.copy(
