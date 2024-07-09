@@ -7,6 +7,7 @@ import com.madalin.disertatie.core.domain.result.TrailImagesResult
 import com.madalin.disertatie.core.domain.result.TrailInfoResult
 import com.madalin.disertatie.core.domain.result.TrailPointsResult
 import com.madalin.disertatie.core.domain.result.TrailResult
+import com.madalin.disertatie.core.domain.result.TrailSaveResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.domain.result.TrailsListResult
 import kotlinx.coroutines.flow.Flow
@@ -15,13 +16,8 @@ interface FirebaseContentRepository {
     /**
      * Writes this [trail] into the database and stores its images on cloud storage.
      * The trail points will be written to a collection inside the document of this trail.
-     * @param onSuccess Invoked when the operation succeeds.
-     * @param onFailure Invoked when the operation fails.
      */
-    fun saveTrail(
-        trail: Trail,
-        onSuccess: () -> Unit, onFailure: (message: String?) -> Unit
-    )
+    suspend fun saveTrail(trail: Trail): Flow<TrailSaveResult>
 
     /**
      * Retrieves the trails belonging to the user with the given [userId] as a [TrailsListResult]

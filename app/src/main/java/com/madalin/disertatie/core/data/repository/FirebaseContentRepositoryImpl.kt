@@ -21,6 +21,7 @@ import com.madalin.disertatie.core.domain.result.TrailImagesResult
 import com.madalin.disertatie.core.domain.result.TrailInfoResult
 import com.madalin.disertatie.core.domain.result.TrailPointsResult
 import com.madalin.disertatie.core.domain.result.TrailResult
+import com.madalin.disertatie.core.domain.result.TrailSaveResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
 import com.madalin.disertatie.core.domain.result.TrailsListResult
 import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
@@ -37,22 +38,25 @@ class FirebaseContentRepositoryImpl(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : FirebaseContentRepository {
 
-    override fun saveTrail(
-        trail: Trail,
-        onSuccess: () -> Unit, onFailure: (message: String?) -> Unit
-    ) {
-        val trailWriteTasks = trailWriteTasks(firestore, trail)
-        val imageUploadTasks = imageUploadTasks(storage, trail)
-        val allTasks = mutableListOf<Task<*>>()
+    override suspend fun saveTrail(trail: Trail) = callbackFlow {
+        try {
+            trySend(TrailSaveResult.Loading)
 
-        allTasks.add(trailWriteTasks)
-        allTasks.addAll(imageUploadTasks)
+            val trailWriteTasks = trailWriteTasks(firestore, trail)
+            val imageUploadTasks = imageUploadTasks(storage, trail)
+            val allTasks = mutableListOf<Task<*>>()
 
-        Tasks.whenAll(allTasks)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) onSuccess()
-                else onFailure(task.exception?.message)
-            }
+            allTasks.add(trailWriteTasks)
+            allTasks.addAll(imageUploadTasks)
+
+            Tasks.whenAll(allTasks).await()
+
+            trySend(TrailSaveResult.Success)
+        } catch (e: Exception) {
+            trySend(TrailSaveResult.Error(e.message))
+        } finally {
+            awaitClose()
+        }
     }
 
     override suspend fun observeTrailsByUserId(userId: String) = callbackFlow {

@@ -39,3 +39,9 @@ sealed class TrailDeleteResult {
     data object Success : TrailDeleteResult()
     data class Error(val error: String?) : TrailDeleteResult()
 }
+
+sealed class TrailSaveResult {
+    data object Loading : TrailSaveResult()
+    data object Success : TrailSaveResult()
+    data class Error(val error: String?) : TrailSaveResult()
+}

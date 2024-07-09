@@ -23,9 +23,12 @@ import com.madalin.disertatie.core.domain.model.TrailImage
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
+import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.core.domain.result.SuggestionResult
 import com.madalin.disertatie.core.domain.result.TrailResult
+import com.madalin.disertatie.core.domain.result.TrailSaveResult
 import com.madalin.disertatie.core.domain.result.TrailsListResult
+import com.madalin.disertatie.core.domain.result.WeatherResult
 import com.madalin.disertatie.core.domain.util.NEARBY_TRAIL_MIN_DISTANCE
 import com.madalin.disertatie.core.domain.util.generateId
 import com.madalin.disertatie.core.domain.validation.TrailValidator
@@ -38,10 +41,8 @@ import com.madalin.disertatie.map.domain.LocationClassifier
 import com.madalin.disertatie.map.domain.LocationClient
 import com.madalin.disertatie.map.domain.extension.hasSameCoordinates
 import com.madalin.disertatie.map.domain.extension.toLatLng
-import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.domain.result.LocationClassificationResult
 import com.madalin.disertatie.map.domain.result.LocationFetchingResult
-import com.madalin.disertatie.core.domain.result.WeatherResult
 import com.madalin.disertatie.map.domain.util.buildPrompt
 import com.madalin.disertatie.map.domain.util.requestLocationSettings
 import com.madalin.disertatie.map.presentation.action.LocationAction
@@ -78,6 +79,7 @@ class MapViewModel(
 
     private lateinit var locationFetchingScope: CoroutineScope
     private lateinit var locationClient: LocationClient
+    private lateinit var saveTrailJob: Job
     private lateinit var launchedTrailJob: Job
 
     init {
@@ -435,7 +437,6 @@ class MapViewModel(
      * Saves the current trail into the database and its images to cloud storage and hides the dialog.
      */
     private fun saveTrail() {
-        // TODO add info like starting, middle and ending point, trail length, etc.
         val currentTrail = _uiState.value.currentTrail
         if (currentTrail == null) {
             globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.can_not_save_a_non_existent_trail))
@@ -443,28 +444,30 @@ class MapViewModel(
         }
         if (!validateTrailName(currentTrail.name)) return
 
-        _uiState.update { it.copy(isTrailUploading = true) } // uploading has started
+        saveTrailJob = viewModelScope.launch {
+            firebaseContentRepository.saveTrail(currentTrail)
+                .collect { result ->
+                    when (result) {
+                        TrailSaveResult.Loading -> _uiState.update { it.copy(isTrailUploading = true) } // uploading has started
+                        TrailSaveResult.Success -> {
+                            _uiState.update {
+                                it.copy(
+                                    isTrailEndDialogVisible = false,
+                                    isTrailUploading = false,
+                                    currentTrail = null
+                                )
+                            }
+                            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.trail_has_been_saved))
+                        }
 
-        firebaseContentRepository.saveTrail(currentTrail,
-            onSuccess = {
-                _uiState.update {
-                    it.copy(
-                        isTrailEndDialogVisible = false,
-                        isTrailUploading = false,
-                        currentTrail = null
-                    )
+                        is TrailSaveResult.Error -> {
+                            val message = result.error ?: R.string.could_not_save_the_trail
+                            globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, message))
+                            _uiState.update { it.copy(isTrailUploading = false) }
+                        }
+                    }
                 }
-                globalDriver.onAction(
-                    GlobalAction.ShowStatusBanner(StatusBannerType.Success, R.string.trail_has_been_saved)
-                )
-            },
-            onFailure = { message ->
-                if (message == null) globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, R.string.could_not_save_the_trail))
-                else globalDriver.onAction(GlobalAction.ShowStatusBanner(StatusBannerType.Error, message))
-
-                _uiState.update { it.copy(isTrailUploading = false) }
-            }
-        )
+        }
     }
 
     /**
