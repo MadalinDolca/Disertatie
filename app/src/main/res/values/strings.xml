@@ -177,4 +177,8 @@
     <string name="found_x_trails_within_a_radius_of_y">Found %d trails within a radius of %s</string>
     <string name="found_trails">Found trails</string>
     <string name="loading_trail">Loading trail</string>
+    <string name="could_not_get_weather_forecast">Could not get weather forecast</string>
+    <string name="could_not_get_the_weather_forecast_because_the_coordinates_are_null">Could not get the weather forecast because the coordinates are null</string>
+    <string name="weather_forecast">Weather forecast</string>
+    <string name="loading_weather_forecast">Loading weather forecast</string>
 </resources>

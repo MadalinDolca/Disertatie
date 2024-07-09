@@ -1,6 +1,7 @@
 package com.madalin.disertatie.core.domain.extension
 
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -17,6 +18,24 @@ fun Long.asDate(): String = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).
  * Formats this [Long] timestamp to a `dd.MM.yyyy HH:mm:ss` string.
  */
 fun Long.asDateAndTime(): String = SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(this)
+
+/**
+ * Formats this [Long] UNIX UTC timestamp to a `dd.MM.yyyy HH:mm` string.
+ */
+fun Long.utcUnixAsDateAndTime(): String {
+    val date = Date(this * 1000)
+    val format = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    return format.format(date)
+}
+
+/**
+ * Formats this [Long] UNIX UTC timestamp to a `dd.MM` string.
+ */
+fun Long.utcUnixAsDayAndMonth(): String {
+    val date = Date(this * 1000)
+    val format = SimpleDateFormat("dd.MM", Locale.getDefault())
+    return format.format(date)
+}
 
 /**
  * Formats this [Long] timestamp to a duration representation string.

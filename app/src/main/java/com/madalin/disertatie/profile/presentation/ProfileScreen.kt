@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.extension.asDate
+import com.madalin.disertatie.core.presentation.components.SectionTitle
 import com.madalin.disertatie.core.presentation.components.TrailBannerItem
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.profile.presentation.action.ProfileAction
@@ -73,11 +74,9 @@ fun ProfileScreen(
             )
             Spacer(modifier = Modifier.height(Dimens.separator * 2))
 
-            Text(
-                text = stringResource(R.string.user_trails),
-                modifier = Modifier.padding(horizontal = Dimens.container),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+            SectionTitle(
+                title = stringResource(R.string.user_trails),
+                modifier = Modifier.padding(horizontal = Dimens.container)
             )
             Spacer(modifier = Modifier.height(Dimens.separator))
         }

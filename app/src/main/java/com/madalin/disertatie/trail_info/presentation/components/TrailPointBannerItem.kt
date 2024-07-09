@@ -2,7 +2,6 @@ package com.madalin.disertatie.trail_info.presentation.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Hiking
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,7 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.extension.prettyLength
 import com.madalin.disertatie.core.domain.model.TrailImage
@@ -79,9 +79,7 @@ fun TrailPointBannerItem(
                 text = distance.prettyLength(),
                 style = MaterialTheme.typography.labelSmall
             )
-            DashedVerticalLine(
-
-            )
+            DashedVerticalLine()
         }
         // info column
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.separator)) {
@@ -138,8 +136,9 @@ private fun ImagesRow(
         horizontalArrangement = Arrangement.spacedBy(space = Dimens.separator)
     ) {
         imagesList.forEachIndexed { index, trailImage ->
-            Image(
-                painter = rememberAsyncImagePainter(model = trailImage.imageUrl),
+            SubcomposeAsyncImage(
+                model = trailImage.imageUrl,
+                loading = { CircularProgressIndicator() },
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

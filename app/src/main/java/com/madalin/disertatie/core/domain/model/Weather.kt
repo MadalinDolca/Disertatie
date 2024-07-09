@@ -14,5 +14,6 @@ data class Weather(
     val mainPressure: Int? = null,
     val mainHumidity: Int? = null,
     val windSpeed: Double? = null,
-    val clouds: Int? = null
+    val clouds: Int? = null,
+    val datetime: Long? = null
 ) : Parcelable

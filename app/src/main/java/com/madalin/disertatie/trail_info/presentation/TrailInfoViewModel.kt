@@ -8,27 +8,33 @@ import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.action.GlobalAction
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
+import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.core.domain.result.TrailDeleteResult
 import com.madalin.disertatie.core.domain.result.TrailImagesResult
 import com.madalin.disertatie.core.domain.result.TrailInfoResult
 import com.madalin.disertatie.core.domain.result.TrailPointsResult
 import com.madalin.disertatie.core.domain.result.TrailUpdateResult
+import com.madalin.disertatie.core.domain.result.WeatherForecastResult
 import com.madalin.disertatie.core.domain.util.mapTrailPointsAndImageUrls
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.GlobalState
 import com.madalin.disertatie.core.presentation.components.StatusBannerType
 import com.madalin.disertatie.core.presentation.navigation.TrailInfoDest
 import com.madalin.disertatie.core.presentation.util.UiText
+import com.madalin.disertatie.trail_info.domain.util.getUniqueDaysWithIndexes
 import com.madalin.disertatie.trail_info.presentation.action.TrailInfoAction
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TrailInfoViewModel(
     private val globalDriver: GlobalDriver,
     private val firebaseContentRepository: FirebaseContentRepository,
+    private val weatherRepository: WeatherRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(TrailInfoUiState())
@@ -88,7 +94,7 @@ class TrailInfoViewModel(
 
     /**
      * Obtains the info of the trail that has the current [trailId] in the database.
-     * Calls [getTrailPoints] after the info is obtained.
+     * Calls [getWeatherForecast] and [getTrailPoints] after the info is obtained.
      */
     private fun getTrailInfo() {
         val id = trailId
@@ -110,7 +116,15 @@ class TrailInfoViewModel(
                             loadingInfoError = UiText.Empty
                         )
                     }
-                    getTrailPoints()
+
+                    launch {
+                        getWeatherForecast(
+                            trailResponse.trail.startingPointCoordinates?.latitude,
+                            trailResponse.trail.startingPointCoordinates?.longitude
+                        )
+                    }
+
+                    launch { getTrailPoints() }
                 }
 
                 TrailInfoResult.NotFound -> _uiState.update {
@@ -205,6 +219,49 @@ class TrailInfoViewModel(
                 }
             }
         }
+    }
+
+    private fun getWeatherForecast(latitude: Double?, longitude: Double?) {
+        if (latitude == null || longitude == null) {
+            _uiState.update { it.copy(weatherForecastError = UiText.Resource(R.string.could_not_get_the_weather_forecast_because_the_coordinates_are_null)) }
+            return
+        }
+
+        weatherRepository
+            .getFiveDaysWeatherForecast(latitude, longitude, "metric")
+            .map { result ->
+                when (result) {
+                    WeatherForecastResult.Loading -> {
+                        _uiState.update { it.copy(isLoadingWeatherForecast = true) }
+                    }
+
+                    is WeatherForecastResult.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoadingWeatherForecast = false,
+                                weatherForecast = result.weatherForecast,
+                                weatherForecastTabs = getUniqueDaysWithIndexes(result.weatherForecast),
+                                weatherForecastError = UiText.Empty
+                            )
+                        }
+                    }
+
+                    is WeatherForecastResult.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoadingWeatherForecast = false,
+                                weatherForecast = emptyList(),
+                                weatherForecastTabs = emptyList(),
+                                weatherForecastError = if (result.message != null) {
+                                    UiText.Dynamic(result.message)
+                                } else {
+                                    UiText.Resource(R.string.could_not_get_weather_forecast)
+                                }
+                            )
+                        }
+                    }
+                }
+            }.launchIn(viewModelScope)
     }
 
     /**

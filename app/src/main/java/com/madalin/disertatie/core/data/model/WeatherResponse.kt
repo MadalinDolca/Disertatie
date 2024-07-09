@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class WeatherResponse(
-    val coord: Coord,
+    val coord: Coord? = null,
     val weather: List<Weather>? = null,
     val base: String? = null,
     val main: Main? = null,
@@ -74,4 +74,3 @@ data class Sys(
     val sunrise: Long? = null,
     val sunset: Long? = null
 )
-

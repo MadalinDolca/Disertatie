@@ -9,26 +9,19 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CameraAlt
-import androidx.compose.material.icons.rounded.Cloud
-import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.SmartToy
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.WbSunny
-import androidx.compose.material.icons.rounded.WindPower
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -65,6 +58,8 @@ import com.madalin.disertatie.core.domain.extension.asDateAndTime
 import com.madalin.disertatie.core.domain.model.TrailImage
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.model.Weather
+import com.madalin.disertatie.core.presentation.components.WeatherInfo
+import com.madalin.disertatie.core.presentation.components.WeatherInfoMode
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.map.presentation.action.SuggestionAction
 import com.madalin.disertatie.map.presentation.action.TrailAction
@@ -301,87 +296,11 @@ private fun WeatherCard(
                 CircularProgressIndicator()
             }
         } else if (weather != null) {
-            WeatherInfo(weather = weather)
-        }
-    }
-}
-
-@Composable
-private fun WeatherInfo(
-    weather: Weather,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.padding(Dimens.container)) {
-        Row(
-            modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Column {
-                SubcomposeAsyncImage(
-                    model = "https://openweathermap.org/img/wn/${weather.weatherIcon}@2x.png",
-                    loading = { CircularProgressIndicator() },
-                    contentDescription = "Weather icon",
-                    modifier = Modifier.size(50.dp)
-                )
-                Text(
-                    text = "${weather.weatherMain}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "${weather.weatherDescription}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            Spacer(modifier = Modifier.width(Dimens.separator))
-
-            Column {
-                Text(text = "${weather.locationName}")
-                Text(
-                    text = "${weather.mainTemperature} " + stringResource(R.string.unit_celsius_degrees),
-                    style = MaterialTheme.typography.headlineLarge
-                )
-                Text(
-                    text = stringResource(R.string.feels_like_x_celsius_degrees, "${weather.mainFeelsLike}"),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Column {
-                Row {
-                    Icon(imageVector = Icons.Rounded.WindPower, contentDescription = "Wind speed")
-                    Spacer(modifier = Modifier.width(Dimens.separator))
-                    Text(text = "${weather.windSpeed} " + stringResource(R.string.unit_meters_per_second))
-                }
-                Row {
-                    Icon(imageVector = Icons.Rounded.Cloud, contentDescription = "Clouds")
-                    Spacer(modifier = Modifier.width(Dimens.separator))
-                    Text(text = "${weather.clouds} " + stringResource(R.string.unit_percent))
-                }
-            }
-
-            Spacer(modifier = Modifier.width(Dimens.separator * 2))
-
-            Column {
-                Row {
-                    Icon(imageVector = Icons.Rounded.Compress, contentDescription = "Pressure")
-                    Spacer(modifier = Modifier.width(Dimens.separator))
-                    Text(text = "${weather.mainPressure} " + stringResource(R.string.unit_atmospheric_pressure_on_the_sea_level))
-                }
-                Row {
-                    Icon(imageVector = Icons.Rounded.WaterDrop, contentDescription = "Humidity")
-                    Spacer(modifier = Modifier.width(Dimens.separator))
-                    Text(text = "${weather.mainHumidity} " + stringResource(R.string.unit_percent))
-                }
-            }
+            WeatherInfo(
+                weather = weather,
+                mode = WeatherInfoMode.SINGLE,
+                modifier = modifier.padding(Dimens.container)
+            )
         }
     }
 }

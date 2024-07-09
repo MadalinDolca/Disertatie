@@ -1,6 +1,5 @@
 package com.madalin.disertatie.trail_info.presentation
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandHorizontally
@@ -26,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CalendarToday
@@ -45,7 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,25 +55,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.SubcomposeAsyncImage
 import com.madalin.disertatie.R
 import com.madalin.disertatie.core.domain.extension.asDateAndTime
 import com.madalin.disertatie.core.domain.extension.asDuration
 import com.madalin.disertatie.core.domain.extension.prettyLength
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
+import com.madalin.disertatie.core.domain.model.Weather
 import com.madalin.disertatie.core.presentation.components.ScreenTopBar
+import com.madalin.disertatie.core.presentation.components.SectionTitle
 import com.madalin.disertatie.core.presentation.util.Dimens
 import com.madalin.disertatie.core.presentation.util.UiText
+import com.madalin.disertatie.trail_info.domain.model.WeatherTab
 import com.madalin.disertatie.trail_info.presentation.action.TrailInfoAction
+import com.madalin.disertatie.trail_info.presentation.components.InfoField
+import com.madalin.disertatie.trail_info.presentation.components.InfoFieldType
 import com.madalin.disertatie.trail_info.presentation.components.TrailPointBannerItem
-import dev.jeziellago.compose.markdowntext.MarkdownText
+import com.madalin.disertatie.trail_info.presentation.components.WeatherForecastPager
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -116,16 +116,30 @@ fun TrailInfoScreen(
                     isEditing = uiState.isEditing,
                     isLoading = uiState.isLoadingInfo,
                     error = uiState.loadingInfoError,
-                    onAction = viewModel::handleAction
+                    onAction = viewModel::handleAction,
+                    modifier = Modifier.padding(Dimens.container)
                 )
-                HorizontalDivider(modifier = Modifier.padding(Dimens.container))
+
+                if (!uiState.isEditing) {
+                    HorizontalDivider(modifier = Modifier.padding(Dimens.container))
+                    WeatherForecastSection(
+                        isLoading = uiState.isLoadingWeatherForecast,
+                        error = uiState.weatherForecastError,
+                        weatherForecast = uiState.weatherForecast,
+                        weatherForecastTabs = uiState.weatherForecastTabs,
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(Dimens.container))
+                }
             }
-            pointsTimeline(
-                pointsList = uiState.trailPointsList,
-                distancesList = uiState.trailPointsDistances,
-                isLoading = uiState.isLoadingPoints,
-                error = uiState.loadingPointsError
-            )
+
+            if (!uiState.isEditing) {
+                pointsTimeline(
+                    pointsList = uiState.trailPointsList,
+                    distancesList = uiState.trailPointsDistances,
+                    isLoading = uiState.isLoadingPoints,
+                    error = uiState.loadingPointsError
+                )
+            }
         }
         RightSideButtons(
             isOwner = uiState.currentUser.id == uiState.trail?.userId,
@@ -165,11 +179,7 @@ private fun TrailInfo(
     onAction: (TrailInfoAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .animateContentSize()
-            .padding(Dimens.container)
-    ) {
+    Column(modifier = modifier.animateContentSize()) {
         if (isLoading) {
             CircularLoader(
                 text = stringResource(R.string.loading_info),
@@ -202,10 +212,8 @@ private fun TrailInfo(
 
             // description
             if (trail.description.isNotEmpty() || isEditing) {
-                Text(
-                    text = stringResource(R.string.description),
-                    style = MaterialTheme.typography.titleLarge
-                )
+                SectionTitle(title = stringResource(R.string.description))
+                Spacer(modifier = Modifier.height(Dimens.separator))
                 InfoField(
                     type = InfoFieldType.DESCRIPTION,
                     text = trail.description,
@@ -306,6 +314,42 @@ private fun InfoRow(
     }
 }
 
+@Composable
+private fun WeatherForecastSection(
+    isLoading: Boolean,
+    error: UiText,
+    weatherForecast: List<Weather>,
+    weatherForecastTabs: List<WeatherTab>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        SectionTitle(
+            title = stringResource(R.string.weather_forecast),
+            modifier = Modifier.padding(horizontal = Dimens.container)
+        )
+        Spacer(modifier = Modifier.height(Dimens.separator))
+
+        if (isLoading) {
+            CircularLoader(
+                text = stringResource(R.string.loading_weather_forecast),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally)
+            )
+        } else if (error != UiText.Empty) {
+            Text(
+                text = error.asString(),
+                color = MaterialTheme.colorScheme.error
+            )
+        } else {
+            WeatherForecastPager(
+                weatherForecast = weatherForecast,
+                weatherForecastTabs = weatherForecastTabs
+            )
+        }
+    }
+}
+
 private fun LazyListScope.pointsTimeline(
     pointsList: List<TrailPoint>,
     distancesList: List<Float>,
@@ -334,9 +378,8 @@ private fun LazyListScope.pointsTimeline(
         }
     } else {
         item {
-            Text(
-                text = stringResource(R.string.documented_trail_points),
-                style = MaterialTheme.typography.titleLarge,
+            SectionTitle(
+                title = stringResource(R.string.documented_trail_points),
                 modifier = Modifier.padding(horizontal = Dimens.container)
             )
             Spacer(modifier = Modifier.height(Dimens.separator))
@@ -399,98 +442,6 @@ private fun RightSideButtons(
                 },
                 modifier = Modifier.padding(end = Dimens.container)
             )
-        }
-    }
-}
-
-private enum class InfoFieldType {
-    NAME, DESCRIPTION
-}
-
-@Composable
-private fun InfoField(
-    type: InfoFieldType,
-    text: String,
-    placeholder: @Composable () -> Unit,
-    isEditing: Boolean,
-    onAction: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (isEditing) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = { onAction(it) },
-            placeholder = { placeholder() },
-            modifier = modifier,
-            shape = MaterialTheme.shapes.medium,
-        )
-    } else {
-        if (type == InfoFieldType.NAME) {
-            Text(
-                text = text,
-                modifier = modifier,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        } else {
-            MarkdownText(
-                markdown = text,
-                modifier = modifier
-            )
-        }
-    }
-}
-
-@Composable
-private fun ImagesGrid(
-    imagesList: List<String>,
-    isLoading: Boolean,
-    error: UiText,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.padding(horizontal = Dimens.container)) {
-        if (isLoading) {
-            CircularLoader(
-                text = stringResource(R.string.loading_images),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally)
-            )
-        } else if (error != UiText.Empty) {
-            Text(
-                text = error.asString(),
-                color = MaterialTheme.colorScheme.error
-            )
-        } else {
-            Log.d("ImagesGrid", "imagesList: ${imagesList.size}")
-            val columns = 3
-            var rows = (imagesList.size / columns)
-            if (imagesList.size.mod(columns) > 0) {
-                rows += 1
-            }
-
-            for (rowId in 0 until rows) {
-                val firstIndex = rowId * columns
-                Row {
-                    for (columnId in 0 until columns) {
-                        val index = firstIndex + columnId
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        ) {
-                            if (index < imagesList.size) {
-                                SubcomposeAsyncImage(
-                                    model = imagesList[index],
-                                    loading = { CircularProgressIndicator() },
-                                    contentDescription = null,
-                                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
-                                )
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

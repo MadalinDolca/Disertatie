@@ -3,11 +3,12 @@ package com.madalin.disertatie.core.data.repository
 import com.madalin.disertatie.BuildConfig
 import com.madalin.disertatie.core.data.network.WeatherApiService
 import com.madalin.disertatie.core.data.util.toWeather
+import com.madalin.disertatie.core.data.util.toWeatherForecast
 import com.madalin.disertatie.core.domain.repository.WeatherRepository
+import com.madalin.disertatie.core.domain.result.WeatherForecastResult
 import com.madalin.disertatie.core.domain.result.WeatherResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
@@ -36,16 +37,33 @@ class WeatherRepositoryImpl(
             .create(WeatherApiService::class.java)
     }
 
-    override fun getWeather(lat: Double, lon: Double, units: String): Flow<WeatherResult> = flow {
+    override fun getWeather(lat: Double, lon: Double, units: String) = flow {
         emit(WeatherResult.Loading)
 
         try {
             val response = apiService.getWeather(lat, lon, API_KEY, units).toWeather()
             emit(WeatherResult.Success(response))
-        } catch (exception: HttpException) {
-            emit(WeatherResult.Error(exception.message.orEmpty()))
-        } catch (exception: IOException) {
-            emit(WeatherResult.Error(exception.message.orEmpty()))
+        } catch (e: HttpException) {
+            emit(WeatherResult.Error(e.message.orEmpty()))
+        } catch (e: IOException) {
+            emit(WeatherResult.Error(e.message.orEmpty()))
+        } catch (e: Exception) {
+            emit(WeatherResult.Error(e.message.orEmpty()))
+        }
+    }.flowOn(dispatcher)
+
+    override fun getFiveDaysWeatherForecast(lat: Double, lon: Double, units: String) = flow {
+        emit(WeatherForecastResult.Loading)
+
+        try {
+            val response = apiService.getFiveDaysWeatherForecast(lat, lon, API_KEY, units).toWeatherForecast()
+            emit(WeatherForecastResult.Success(response))
+        } catch (e: HttpException) {
+            emit(WeatherForecastResult.Error(e.message))
+        } catch (e: IOException) {
+            emit(WeatherForecastResult.Error(e.message))
+        } catch (e: Exception) {
+            emit(WeatherForecastResult.Error(e.message))
         }
     }.flowOn(dispatcher)
 }

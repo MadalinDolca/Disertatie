@@ -12,15 +12,15 @@ import com.madalin.disertatie.auth.presentation.password_reset.PasswordResetView
 import com.madalin.disertatie.auth.presentation.register.RegisterViewModel
 import com.madalin.disertatie.core.data.repository.FirebaseContentRepositoryImpl
 import com.madalin.disertatie.core.data.repository.FirebaseUserRepositoryImpl
+import com.madalin.disertatie.core.data.repository.WeatherRepositoryImpl
 import com.madalin.disertatie.core.domain.SuggestionGenerator
 import com.madalin.disertatie.core.domain.repository.FirebaseContentRepository
 import com.madalin.disertatie.core.domain.repository.FirebaseUserRepository
+import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.core.presentation.GlobalDriver
 import com.madalin.disertatie.core.presentation.MainActivityViewModel
 import com.madalin.disertatie.discover.presentation.DiscoverViewModel
 import com.madalin.disertatie.home.presentation.HomeViewModel
-import com.madalin.disertatie.core.data.repository.WeatherRepositoryImpl
-import com.madalin.disertatie.core.domain.repository.WeatherRepository
 import com.madalin.disertatie.map.presentation.MapViewModel
 import com.madalin.disertatie.profile.presentation.ProfileViewModel
 import com.madalin.disertatie.trail_info.presentation.TrailInfoViewModel
@@ -58,5 +58,5 @@ val viewModelModule = module {
     viewModel { MapViewModel(get(), get(), get(), get(), get()) }
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { DiscoverViewModel(get(), get()) }
-    viewModel { (savedStateHandle: SavedStateHandle) -> TrailInfoViewModel(get(), get(), savedStateHandle) }
+    viewModel { (savedStateHandle: SavedStateHandle) -> TrailInfoViewModel(get(), get(), get(), savedStateHandle) }
 }

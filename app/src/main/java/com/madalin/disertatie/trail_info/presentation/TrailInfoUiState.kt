@@ -3,7 +3,9 @@ package com.madalin.disertatie.trail_info.presentation
 import com.madalin.disertatie.core.domain.model.Trail
 import com.madalin.disertatie.core.domain.model.TrailPoint
 import com.madalin.disertatie.core.domain.model.User
+import com.madalin.disertatie.core.domain.model.Weather
 import com.madalin.disertatie.core.presentation.util.UiText
+import com.madalin.disertatie.trail_info.domain.model.WeatherTab
 
 data class TrailInfoUiState(
     val currentUser: User = User(),
@@ -23,5 +25,11 @@ data class TrailInfoUiState(
     // trail images
     val imagesUriList: List<String> = emptyList(),
     val isLoadingImages: Boolean = false,
-    val loadingImagesError: UiText = UiText.Empty
+    val loadingImagesError: UiText = UiText.Empty,
+
+    // weather forecast
+    val weatherForecast: List<Weather> = emptyList(),
+    val weatherForecastTabs: List<WeatherTab> = emptyList(),
+    val isLoadingWeatherForecast: Boolean = false,
+    val weatherForecastError: UiText = UiText.Empty
 )

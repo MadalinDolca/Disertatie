@@ -10,3 +10,12 @@ sealed class WeatherResult {
     data class Success(val weather: Weather) : WeatherResult()
     data class Error(val message: String) : WeatherResult()
 }
+
+/**
+ * Represents the result of a weather forecast request.
+ */
+sealed class WeatherForecastResult {
+    data object Loading : WeatherForecastResult()
+    data class Success(val weatherForecast: List<Weather>) : WeatherForecastResult()
+    data class Error(val message: String?) : WeatherForecastResult()
+}
